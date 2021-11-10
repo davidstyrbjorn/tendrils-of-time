@@ -1,25 +1,17 @@
 #include "raylib.h"
 
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 600
-
-#define WINDOW_TITLE "Window title"
+// Include game, which basically handles EVERYTHING, keep this file minimum
+#include"game.h"
 
 int main(void)
 {
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE);
-    SetTargetFPS(60);
+    // Basic configuration for game
+    s_game game = {0};
+    game.title = "Tree. =_=$€";
+    game.window_size = (Vector2){800, 600};
 
-    while (!WindowShouldClose())
-    {
-        BeginDrawing();
-
-        ClearBackground(RAYWHITE);
-
-        EndDrawing();
-    }
-
-    CloseWindow();
+    // Entrypoint
+    StartGame(&game);
 
     return 0;
 }
