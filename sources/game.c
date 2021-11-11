@@ -15,8 +15,6 @@ void StartGame(s_game* game){
 }
 
 void RunGame(s_game* game) {
-    
-
     while(!WindowShouldClose()){
 
         // Update input related stuff
@@ -30,7 +28,7 @@ void RunGame(s_game* game) {
         /* Draws the basis vectors from 0, 0 on x,y axis */
         DrawCoordinateAxis();
 
-        EndMode2D(game->camera);
+        EndMode2D();
         EndDrawing();
     }
 
