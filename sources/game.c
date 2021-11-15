@@ -1,8 +1,9 @@
 #include"game.h"
 
+#include<stdlib.h>
+
 #include"raylib.h"
 #include"raymath.h"
-#include"external/glad.h"
 
 void StartGame(s_game* game){
     InitWindow(game->window_size.x, game->window_size.y, game->title);
@@ -10,9 +11,11 @@ void StartGame(s_game* game){
     // Setup camera
     game->camera.zoom = 0.5f;
 
-    unsigned int vbo;
-    glGenBuffers(1, &vbo);
-    
+    // Spawn first branch
+    Vector2 origin = (Vector2){0, 0};
+    Color branchColor = BROWN;
+    float thickness = 40.0f;
+    game->branch_root = malloc(sizeof(s_branc));
 
     SetTargetFPS(60);
     RunGame(game); // Go further into it by starting the game loop
