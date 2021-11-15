@@ -2,7 +2,7 @@
 #define GAME_H
 
 #include"raylib.h"
-// BAJS
+
 typedef struct s_game {
     // Some game config data
     const char* title;

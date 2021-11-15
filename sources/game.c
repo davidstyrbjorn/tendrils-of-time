@@ -10,6 +10,10 @@ void StartGame(s_game* game){
     // Setup camera
     game->camera.zoom = 0.5f;
 
+    unsigned int vbo;
+    glGenBuffers(1, &vbo);
+    
+
     SetTargetFPS(60);
     RunGame(game); // Go further into it by starting the game loop
 }
