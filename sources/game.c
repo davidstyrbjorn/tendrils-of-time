@@ -1,8 +1,10 @@
 #include"game.h"
 
+#include<stdlib.h>
+
 #include"raylib.h"
 #include"raymath.h"
-#include"rlgl.h"
+#include"external/glad.h"
 
 #include"tree.h"
 

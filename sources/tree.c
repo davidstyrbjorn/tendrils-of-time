@@ -5,6 +5,9 @@
 #include"raymath.h"
 
 #include<stdio.h>
+#include<stdlib.h>
+
+#include"raymath.h"
 
 #define MAX_RECURSION 4
 
