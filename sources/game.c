@@ -4,7 +4,7 @@
 
 #include"raylib.h"
 #include"raymath.h"
-#include"external/glad.h"
+#include"rlgl.h"
 
 #include"tree.h"
 
@@ -23,27 +23,43 @@ void StartGame(s_game* game){
 }
 
 void RunGame(s_game* game) {
+
+
+    // Setup post-processing stuff
+    Shader pp_shader = LoadShader(0, TextFormat(ASSETS_PATH"postprocessing.glsl", 330)); // Load bloom shader
+    RenderTexture2D framebuffer_texture = LoadRenderTexture(game->window_size.x, game->window_size.y);
+
     while(!WindowShouldClose()){
 
         // Update input related stuff
         InputGame(game);
 
-        BeginDrawing();
+        BeginTextureMode(framebuffer_texture); // Enable so we draw to the framebuffer texture!
         BeginMode2D(game->camera);
 
-        ClearBackground(SKYBLUE);
+            ClearBackground(SKYBLUE);
 
-        /* Draws the basis vectors from 0, 0 on x,y axis */
-        //DrawCoordinateAxis();
+            /* Draws the basis vectors from 0, 0 on x,y axis */
+            //DrawCoordinateAxis();
 
-        rlPushMatrix();
-        rlTranslatef(game->window_size.x, game->window_size.y*2, 0); // Translate to middle and bottom 
-        RecursiveTreeDraw(game->fractal_tree_start_length, 
-        game->fractal_tree_start_length, 
-        game->fractal_tree_angle);
-        rlPopMatrix();
+            rlPushMatrix();
+            rlTranslatef(game->window_size.x, game->window_size.y*2, 0); // Translate to middle and bottom 
+            RecursiveTreeDraw(game->fractal_tree_start_length, 
+            game->fractal_tree_start_length, 
+            game->fractal_tree_angle);
+            rlPopMatrix();
 
         EndMode2D();
+        EndTextureMode(); // End framebuffer texture
+
+        BeginDrawing(); // Draw the actual post processed framebuffer
+
+            ClearBackground(WHITE);
+            BeginShaderMode(pp_shader);
+                // Flip the y due to how the default opengl coordinates work (left-bottom)
+                DrawTextureRec(framebuffer_texture.texture, (Rectangle){0, 0, (float)+framebuffer_texture.texture.width, (float)-framebuffer_texture.texture.height}, (Vector2){0.0, 0.0}, WHITE);
+            EndShaderMode();
+
         EndDrawing();
     }
 
@@ -94,15 +110,6 @@ void InputGame(s_game* game) {
         game->fractal_tree_angle += 10.0f * GetFrameTime();
     }else if(IsKeyDown(KEY_DOWN)){
         game->fractal_tree_angle += -10.0f * GetFrameTime();
-    }
-    if (IsKeyDown(KEY_Z))
-    {
-        game->fractal_tree_start_length += -5.0f * GetFrameTime();
-    }
-    else if (IsKeyDown(KEY_X))
-    {
-        game->fractal_tree_start_length += 5.0f * GetFrameTime();
-    }
-    
+    }    
 
 }
