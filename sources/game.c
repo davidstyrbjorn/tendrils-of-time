@@ -2,7 +2,9 @@
 
 #include"raylib.h"
 #include"raymath.h"
-#include"external/glad.h"
+#include"rlgl.h"
+
+#include"tree.h"
 
 void StartGame(s_game* game){
     InitWindow(game->window_size.x, game->window_size.y, game->title);
@@ -10,9 +12,9 @@ void StartGame(s_game* game){
     // Setup camera
     game->camera.zoom = 0.5f;
 
-    unsigned int vbo;
-    glGenBuffers(1, &vbo);
-    
+    // Setup game values
+    game->fractal_tree_angle = 30;
+    game->fractal_tree_start_length = 350;
 
     SetTargetFPS(60);
     RunGame(game); // Go further into it by starting the game loop
@@ -30,7 +32,14 @@ void RunGame(s_game* game) {
         ClearBackground(SKYBLUE);
 
         /* Draws the basis vectors from 0, 0 on x,y axis */
-        DrawCoordinateAxis();
+        //DrawCoordinateAxis();
+
+        rlPushMatrix();
+        rlTranslatef(game->window_size.x, game->window_size.y*2, 0); // Translate to middle and bottom 
+        RecursiveTreeDraw(game->fractal_tree_start_length, 
+        game->fractal_tree_start_length, 
+        game->fractal_tree_angle);
+        rlPopMatrix();
 
         EndMode2D();
         EndDrawing();
@@ -77,4 +86,21 @@ void InputGame(s_game* game) {
 
     // Move camera
     game->camera.offset = Vector2Add(game->camera.offset, moveVector);
+
+    // Angle input thing
+    if(IsKeyDown(KEY_UP)){
+        game->fractal_tree_angle += 10.0f * GetFrameTime();
+    }else if(IsKeyDown(KEY_DOWN)){
+        game->fractal_tree_angle += -10.0f * GetFrameTime();
+    }
+    if (IsKeyDown(KEY_Z))
+    {
+        game->fractal_tree_start_length += -5.0f * GetFrameTime();
+    }
+    else if (IsKeyDown(KEY_X))
+    {
+        game->fractal_tree_start_length += 5.0f * GetFrameTime();
+    }
+    
+
 }
