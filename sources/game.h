@@ -12,6 +12,9 @@ typedef struct s_game {
     // Fractal tree data
     float fractal_tree_angle;
     int fractal_tree_start_length;
+
+    // L system data
+    char* l_string;
 } s_game;
 
 // Declare game related functions

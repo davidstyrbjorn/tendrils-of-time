@@ -5,6 +5,7 @@
 
 int main(void)
 {
+
     // Basic configuration for game
     s_game game = {0};
     game.title = "Tree. =_=$€";

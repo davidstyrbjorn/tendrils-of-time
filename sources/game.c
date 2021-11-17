@@ -7,12 +7,20 @@
 #include"rlgl.h"
 
 #include"tree.h"
+#include"lsystem.h"
 
 void StartGame(s_game* game){
     InitWindow(game->window_size.x, game->window_size.y, game->title);
     
     // Setup camera
     game->camera.zoom = 0.5f;
+
+    // Test L-System
+    char* x = "F+F+F+F";
+    game->l_string = LSystemStart(x, 1);
+    printf("%s\n", game->l_string);
+    //game->l_string = "F+F+F+F";
+    //printf("RESULT: %s\n", result);
 
     // Setup game values
     game->fractal_tree_angle = 30;
@@ -42,12 +50,14 @@ void RunGame(s_game* game) {
             /* Draws the basis vectors from 0, 0 on x,y axis */
             //DrawCoordinateAxis();
 
-            rlPushMatrix();
-            rlTranslatef(game->window_size.x, game->window_size.y*2, 0); // Translate to middle and bottom 
-            RecursiveTreeDraw(game->fractal_tree_start_length, 
-            game->fractal_tree_start_length, 
-            game->fractal_tree_angle);
-            rlPopMatrix();
+            // rlPushMatrix();
+            // rlTranslatef(game->window_size.x, game->window_size.y*2, 0); // Translate to middle and bottom 
+            // RecursiveTreeDraw(game->fractal_tree_start_length, 
+            // game->fractal_tree_start_length, 
+            // game->fractal_tree_angle);
+            // rlPopMatrix();
+
+            DrawLSystem(game->l_string, 20, 90);
 
         EndMode2D();
         EndTextureMode(); // End framebuffer texture
