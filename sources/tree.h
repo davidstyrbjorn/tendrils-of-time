@@ -8,7 +8,7 @@
 
 typedef struct s_branch {
     s_object object; // Stores basic object info
-    struct s_branch* branch; // Linked list of branches
+    struct s_branch* next; // Linked list of branches
     int recursive_lvl;
     Vector2 norm_direction; // Direction of the branch
     float length;

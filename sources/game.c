@@ -9,6 +9,21 @@
 #include"tree.h"
 #include"lsystem.h"
 
+// L-System rule
+char* test(char c){
+    if(c == 'F') return "FF";
+    if(c == 'X') return "F-[[X+]+X+]+F[+FX]+-X";
+    return NULL;
+}
+
+char* quadratic_gosper(char c){
+    if(c == 'X')
+        return "XFX-YF-YF+FX+FX-YF-YFFX+YF+FXFXYF-FX+YF+FXFX+YF-FXYF-YF-FX+FX+YFYF-";
+    if(c == 'Y')
+        return "+FXFX-YF-YF+FX+FXYF+FX-YFYF-FX-YF+FXYFYF-FX-YFFX+FX+YF-YF-FX+FX+YFY";
+    return NULL;
+}
+
 void StartGame(s_game* game){
     InitWindow(game->window_size.x, game->window_size.y, game->title);
     
@@ -16,23 +31,15 @@ void StartGame(s_game* game){
     game->camera.zoom = 0.5f;
 
     // Test L-System
-    char* x = "F+F+F+F";
-    game->l_string = LSystemStart(x, 1);
-    printf("%s\n", game->l_string);
-    //game->l_string = "F+F+F+F";
-    //printf("RESULT: %s\n", result);
-
-    // Setup game values
-    game->fractal_tree_angle = 30;
-    game->fractal_tree_start_length = 350;
+    char* x = "-YF";
+    game->l_string = LSystemStart(x, 2, quadratic_gosper);
+    printf("STRING:%s\n", game->l_string);
 
     SetTargetFPS(60);
     RunGame(game); // Go further into it by starting the game loop
 }
 
 void RunGame(s_game* game) {
-
-
     // Setup post-processing stuff
     Shader pp_shader = LoadShader(0, TextFormat(ASSETS_PATH"postprocessing.glsl", 330)); // Load bloom shader
     RenderTexture2D framebuffer_texture = LoadRenderTexture(game->window_size.x, game->window_size.y);
@@ -50,14 +57,14 @@ void RunGame(s_game* game) {
             /* Draws the basis vectors from 0, 0 on x,y axis */
             //DrawCoordinateAxis();
 
-            // rlPushMatrix();
-            // rlTranslatef(game->window_size.x, game->window_size.y*2, 0); // Translate to middle and bottom 
+            rlPushMatrix();
+            rlTranslatef(game->window_size.x, game->window_size.y*2, 0); // Translate to middle and bottom 
             // RecursiveTreeDraw(game->fractal_tree_start_length, 
             // game->fractal_tree_start_length, 
             // game->fractal_tree_angle);
-            // rlPopMatrix();
 
-            DrawLSystem(game->l_string, 20, 90);
+            DrawLSystem(game->l_string, 14, 90, 1.001);
+            rlPopMatrix();
 
         EndMode2D();
         EndTextureMode(); // End framebuffer texture
@@ -74,6 +81,7 @@ void RunGame(s_game* game) {
     }
 
     CloseWindow();
+
 }
 
 void EndGame(s_game* game) {
@@ -92,6 +100,8 @@ void DrawCoordinateAxis() {
 
 void InputGame(s_game* game) {
     Vector2 moveVector = { 0 };
+
+    bool boosted = IsKeyDown(KEY_LEFT_SHIFT);
     
     if (IsKeyDown(KEY_D)) {
         moveVector.x--;
@@ -107,10 +117,11 @@ void InputGame(s_game* game) {
         moveVector.y++;
     }
 
-    float cameraSpeed = 10.0f;
+    float cameraSpeed = 140.f;
+    if(boosted) cameraSpeed *= 3.f;
 
     // Scale with delta time
-    Vector2Scale(moveVector, cameraSpeed*GetFrameTime());
+    moveVector = Vector2Scale(moveVector, cameraSpeed*GetFrameTime());
 
     // Move camera
     game->camera.offset = Vector2Add(game->camera.offset, moveVector);
@@ -120,6 +131,12 @@ void InputGame(s_game* game) {
         game->fractal_tree_angle += 10.0f * GetFrameTime();
     }else if(IsKeyDown(KEY_DOWN)){
         game->fractal_tree_angle += -10.0f * GetFrameTime();
-    }    
+    }   
+
+    if(IsKeyDown(KEY_Z)){
+        game->camera.zoom += 1.f * GetFrameTime();
+    } else if(IsKeyDown(KEY_X)){
+        game->camera.zoom -= 1.f * GetFrameTime();
+    }
 
 }
