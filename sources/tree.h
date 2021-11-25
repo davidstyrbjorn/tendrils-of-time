@@ -17,6 +17,7 @@ typedef struct s_branch {
     Vector2 start;
     Vector2 end;
     float length;
+    s_dynamic_branch dynamics;
 } s_branch;
 
 // Takes in a branch, spits out a new one going out from given branch, is recursive

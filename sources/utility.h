@@ -4,7 +4,9 @@
 #include"raymath.h"
 
 float GetRandomFloatValue(float min, float max){
-    return GetRandomValue(min, max) / (float)(max - min);
+    int a = min * 100;
+    int b = max * 100;
+    return GetRandomValue(a, b) / (float)(b - a);
 }
 
 float GetRandomFloatValue01(){

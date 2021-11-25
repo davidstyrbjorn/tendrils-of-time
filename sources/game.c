@@ -116,6 +116,7 @@ void EndGame(s_game* game) {
 
 }
 
+// TODO: Move this to the tree file, makes more sense since alot of logic of renderin tree-stuff goes here
 void DrawObjectTree(s_game* game){
     // Draw the object tree branch by branch
     for(int i = 0; i < game->branch_count; i++){
@@ -125,7 +126,11 @@ void DrawObjectTree(s_game* game){
             DrawLineEx(b.start, b.end, game->base_thickness*ratio, BROWN);
             // This is true if we're on a branch that has no children
             if(!b.done){
-                DrawCircle(b.end.x + GetRandomValue(-4, 4), b.end.y, 20, ColorAlpha(GREEN ,0.5f));
+                Vector2 wind = {0};
+                float temp = b.dynamics.wind_offset + b.dynamics.wind_frequency*GetTime();
+                wind.x = cos(temp) * b.dynamics.wind_amplitude;
+                //wind.y = sin(temp) * b.dynamics.wind_amplitude;
+                DrawCircle(b.end.x + wind.x, b.end.y + wind.y, 20, ColorAlpha(GREEN, 0.8f));
             }
         }
 }

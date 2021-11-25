@@ -34,8 +34,10 @@ s_branch SpawnBranch(s_branch* from, int direction){
     end = rotate_point(start.x, start.y, angle*direction, end);
 
     // Generate some dynamic data for the branch
-    float frequency = GetRandomFloatValue01() + 0.1f;
-    printf("%.2f\n", frequency);
+    s_dynamic_branch dynamic_branch;
+    dynamic_branch.wind_amplitude = 10.0f;
+    dynamic_branch.wind_frequency = GetRandomFloatValue01()*3.0f;
+    dynamic_branch.wind_offset = GetRandomValue(0, 100);
 
     // Create the object
     s_branch new_branch;
@@ -43,6 +45,7 @@ s_branch SpawnBranch(s_branch* from, int direction){
     new_branch.end = end;
     new_branch.length = length;
     new_branch.done = false;
+    new_branch.dynamics = dynamic_branch;
 
     return new_branch;
 }
