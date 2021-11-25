@@ -28,12 +28,37 @@ void StartGame(s_game* game){
     InitWindow(game->window_size.x, game->window_size.y, game->title);
     
     // Setup camera
-    game->camera.zoom = 0.5f;
+    game->camera.zoom = 1.0f;
 
     // Test L-System
     char* x = "-YF";
     game->l_string = LSystemStart(x, 2, quadratic_gosper);
-    printf("STRING:%s\n", game->l_string);
+    //printf("STRING:%s\n", game->l_string);
+
+    // Do object-based tree generation
+    // Setup initial branch
+    game->base_length = 100.0f;
+    game->base_thickness = 15.0f;
+    game->branches[0].done = false;
+    game->branches[0].start = (Vector2){0.0, 0.0};
+    game->branches[0].length = game->base_length;
+    game->branches[0].end = (Vector2){0.0, -game->base_length};
+
+    game->branch_count = 1;
+    game->iteration_levels = 8;
+    for(int i = 0; i < game->iteration_levels; i++){
+        int frozen_branch_count = game->branch_count;
+        for(int j = 0; j < frozen_branch_count; j++){
+            if(!game->branches[j].done){
+                // Spawn 2 branches and insert to the end of branch list
+                game->branches[j].done = true;
+                game->branches[game->branch_count] = SpawnBranch(&game->branches[j], 1);
+                game->branch_count++;
+                game->branches[game->branch_count] = SpawnBranch(&game->branches[j], -1);
+                game->branch_count++;
+            }
+        }
+    }
 
     SetTargetFPS(60);
     RunGame(game); // Go further into it by starting the game loop
@@ -58,14 +83,17 @@ void RunGame(s_game* game) {
             //DrawCoordinateAxis();
 
             rlPushMatrix();
-            rlTranslatef(game->window_size.x, game->window_size.y*2, 0); // Translate to middle and bottom 
+            rlTranslatef(game->window_size.x/2, game->window_size.y, 0); // Translate to middle and bottom 
+            
             // RecursiveTreeDraw(game->fractal_tree_start_length, 
             // game->fractal_tree_start_length, 
             // game->fractal_tree_angle);
+            //DrawLSystem(game->l_string, 14, 90, 1.001);
 
-            DrawLSystem(game->l_string, 14, 90, 1.001);
+            DrawObjectTree(game);
+
             rlPopMatrix();
-
+            
         EndMode2D();
         EndTextureMode(); // End framebuffer texture
 
@@ -86,6 +114,20 @@ void RunGame(s_game* game) {
 
 void EndGame(s_game* game) {
 
+}
+
+void DrawObjectTree(s_game* game){
+    // Draw the object tree branch by branch
+    for(int i = 0; i < game->branch_count; i++){
+            // Branch thickness based on length of the branch, see game->base_thickness & length
+            s_branch b = game->branches[i];
+            float ratio = b.length / game->base_length;
+            DrawLineEx(b.start, b.end, game->base_thickness*ratio, BROWN);
+            // This is true if we're on a branch that has no children
+            if(!b.done){
+                DrawCircle(b.end.x + GetRandomValue(-4, 4), b.end.y, 20, ColorAlpha(GREEN ,0.5f));
+            }
+        }
 }
 
 void DrawCoordinateAxis() {
