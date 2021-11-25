@@ -7,22 +7,8 @@
 #include"rlgl.h"
 
 #include"tree.h"
+#include"attacker.h"
 #include"lsystem.h"
-
-// L-System rule
-char* test(char c){
-    if(c == 'F') return "FF";
-    if(c == 'X') return "F-[[X+]+X+]+F[+FX]+-X";
-    return NULL;
-}
-
-char* quadratic_gosper(char c){
-    if(c == 'X')
-        return "XFX-YF-YF+FX+FX-YF-YFFX+YF+FXFXYF-FX+YF+FXFX+YF-FXYF-YF-FX+FX+YFYF-";
-    if(c == 'Y')
-        return "+FXFX-YF-YF+FX+FXYF+FX-YFYF-FX-YF+FXYFYF-FX-YFFX+FX+YF-YF-FX+FX+YFY";
-    return NULL;
-}
 
 void StartGame(s_game* game){
     InitWindow(game->window_size.x, game->window_size.y, game->title);
@@ -30,34 +16,12 @@ void StartGame(s_game* game){
     // Setup camera
     game->camera.zoom = 1.0f;
 
-    // Test L-System
-    char* x = "-YF";
-    game->l_string = LSystemStart(x, 2, quadratic_gosper);
-    //printf("STRING:%s\n", game->l_string);
-
     // Do object-based tree generation
-    // Setup initial branch
-    game->base_length = 100.0f;
-    game->base_thickness = 15.0f;
-    game->branches[0].done = false;
-    game->branches[0].start = (Vector2){0.0, 0.0};
-    game->branches[0].length = game->base_length;
-    game->branches[0].end = (Vector2){0.0, -game->base_length};
+    CreateTree(&game->tree);
 
-    game->branch_count = 1;
-    game->iteration_levels = 8;
-    for(int i = 0; i < game->iteration_levels; i++){
-        int frozen_branch_count = game->branch_count;
-        for(int j = 0; j < frozen_branch_count; j++){
-            if(!game->branches[j].done){
-                // Spawn 2 branches and insert to the end of branch list
-                game->branches[j].done = true;
-                game->branches[game->branch_count] = SpawnBranch(&game->branches[j], 1);
-                game->branch_count++;
-                game->branches[game->branch_count] = SpawnBranch(&game->branches[j], -1);
-                game->branch_count++;
-            }
-        }
+    // Spawn 10 attackers
+    for(int i = 0; i < 10; i++){
+        SpawnAttacker(&game->tree, &game->attackers[i]);
     }
 
     SetTargetFPS(60);
@@ -73,6 +37,9 @@ void RunGame(s_game* game) {
 
         // Update input related stuff
         InputGame(game);
+        for(int i = 0; i < MAX_ATTACKERS; i++){
+            if(game->attackers[i].enabled) UpdateAttacker(&game->attackers[i]);
+        }
 
         BeginTextureMode(framebuffer_texture); // Enable so we draw to the framebuffer texture!
         BeginMode2D(game->camera);
@@ -80,19 +47,19 @@ void RunGame(s_game* game) {
             ClearBackground(SKYBLUE);
 
             /* Draws the basis vectors from 0, 0 on x,y axis */
-            //DrawCoordinateAxis();
+            DrawCoordinateAxis();
 
-            rlPushMatrix();
-            rlTranslatef(game->window_size.x/2, game->window_size.y, 0); // Translate to middle and bottom 
-            
             // RecursiveTreeDraw(game->fractal_tree_start_length, 
             // game->fractal_tree_start_length, 
             // game->fractal_tree_angle);
             //DrawLSystem(game->l_string, 14, 90, 1.001);
 
-            DrawObjectTree(game);
+            RenderTree(&game->tree);
 
-            rlPopMatrix();
+            // Render attackers
+            for(int i = 0; i < MAX_ATTACKERS; i++){
+                if(game->attackers[i].enabled) RenderAttacker(&game->attackers[i]);
+            }
             
         EndMode2D();
         EndTextureMode(); // End framebuffer texture
@@ -114,25 +81,6 @@ void RunGame(s_game* game) {
 
 void EndGame(s_game* game) {
 
-}
-
-// TODO: Move this to the tree file, makes more sense since alot of logic of renderin tree-stuff goes here
-void DrawObjectTree(s_game* game){
-    // Draw the object tree branch by branch
-    for(int i = 0; i < game->branch_count; i++){
-            // Branch thickness based on length of the branch, see game->base_thickness & length
-            s_branch b = game->branches[i];
-            float ratio = b.length / game->base_length;
-            DrawLineEx(b.start, b.end, game->base_thickness*ratio, BROWN);
-            // This is true if we're on a branch that has no children
-            if(!b.done){
-                Vector2 wind = {0};
-                float temp = b.dynamics.wind_offset + b.dynamics.wind_frequency*GetTime();
-                wind.x = cos(temp) * b.dynamics.wind_amplitude;
-                //wind.y = sin(temp) * b.dynamics.wind_amplitude;
-                DrawCircle(b.end.x + wind.x, b.end.y + wind.y, 20, ColorAlpha(GREEN, 0.8f));
-            }
-        }
 }
 
 void DrawCoordinateAxis() {

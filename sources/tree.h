@@ -3,8 +3,13 @@
 
 #include"raylib.h"
 
-typedef struct s_dynamic_branch {
+#define MAX_BRANCHES 1028
 
+typedef struct s_leaf {
+    Vector2 position;
+} s_leaf;
+
+typedef struct s_dynamic_branch {
     // Trigonometric parameters so that every branch has a unique wind animation
     float wind_frequency;
     float wind_offset;
@@ -20,11 +25,25 @@ typedef struct s_branch {
     s_dynamic_branch dynamics;
 } s_branch;
 
+typedef struct s_tree {
+    s_branch branches[MAX_BRANCHES];
+    s_leaf leaves[MAX_BRANCHES];
+    int iteration_levels;
+    int branch_count;
+    int leaf_count;
+    float base_thickness;
+    float base_length;
+} s_tree;
+
 // Takes in a branch, spits out a new one going out from given branch, is recursive
 // Spits out nullptr if the branch is a "leaf"
 s_branch SpawnBranch(s_branch* from, int direction);
 
 // Draw using rlgl immediate mode
 void RecursiveTreeDraw(int length, int start_length, float angle);
+
+void CreateTree(s_tree* tree);
+void RenderTree(s_tree* tree);
+s_leaf* GetLeaf(s_tree* tree);
 
 #endif 
