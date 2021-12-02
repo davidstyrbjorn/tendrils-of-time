@@ -68,7 +68,7 @@ void DrawLSystem(char* axiom, int line_length, int angle, float length_scale_fac
         switch(c){
             // Rules table
             case 'F':
-                DrawLineEx((Vector2){0.0, 0.0}, (Vector2){0.0, -length}, 6.0f, BLACK);
+                DrawLineEx((Vector2){0.0, 0.0}, (Vector2){0.0, -length}, 4.0f, BLACK);
                 rlTranslatef(0, -length, 0);
                 break;
             case '+':

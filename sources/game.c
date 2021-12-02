@@ -10,6 +10,7 @@
 #include"attacker.h"
 #include"lsystem.h"
 
+// L-System rule
 void StartGame(s_game* game){
     InitWindow(game->window_size.x, game->window_size.y, game->title);
     
