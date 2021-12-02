@@ -15,9 +15,8 @@
 #define MAX_RECURSION 4
 
 Vector2 rotate_point(float cx, float cy, float angle, Vector2 p){
-
-     return (Vector2){cos(angle) * (p.x - cx) - sin(angle) * (p.y - cy) + cx,
-                  sin(angle) * (p.x - cx) + cos(angle) * (p.y - cy) + cy};
+    return (Vector2){cos(angle) * (p.x - cx) - sin(angle) * (p.y - cy) + cx,
+        sin(angle) * (p.x - cx) + cos(angle) * (p.y - cy) + cy};
 }
 
 s_branch SpawnBranch(s_branch* from, int direction){
@@ -81,25 +80,34 @@ void CreateTree(s_tree* tree) {
     for(int i = 0; i < tree->branch_count; i++){
         if(!tree->branches[i].done){
             // Found leaf!
-            tree->leaves[tree->leaf_count++].position = tree->branches[i].end;
+            tree->leaves[tree->leaf_count].position = tree->branches[i].end;
+            tree->leaves[tree->leaf_count].hp = 3; 
+            tree->leaves[tree->leaf_count].attached_branch = &tree->branches[i];
+            tree->leaf_count++;
         }
     }
 }
 
 void RenderTree(s_tree* tree){
+    // Branches
     for(int i = 0; i < tree->branch_count; i++){
         // Branch thickness based on length of the branch, see tree->base_thickness & length
-        s_branch b = tree->branches[i];
-        float ratio = b.length / tree->base_length;
-        DrawLineEx(b.start, b.end, tree->base_thickness*ratio, BROWN);
-        // This is true if we're on a branch that has no children
-        if(!b.done){
-            Vector2 wind = {0};
-            float temp = b.dynamics.wind_offset + b.dynamics.wind_frequency*GetTime();
-            wind.x = cos(temp) * b.dynamics.wind_amplitude;
-            //wind.y = sin(temp) * b.dynamics.wind_amplitude;
-            DrawCircle(b.end.x + wind.x, b.end.y + wind.y, 20, ColorAlpha(GREEN, 0.8f));
-        }
+        s_branch* b = &tree->branches[i];
+        float ratio = b->length / tree->base_length;
+        DrawLineEx(b->start, b->end, tree->base_thickness*ratio, BROWN);
+    }
+    // Leaves
+    for(int i = 0; i < MAX_LEAVES; i++){
+        s_leaf* leaf = &tree->leaves[i];
+        if(leaf->hp == 0) continue;
+
+        // Render the leaf
+        Vector2 wind = {0};
+        s_branch* b = leaf->attached_branch;
+        float temp = b->dynamics.wind_offset + b->dynamics.wind_frequency*GetTime();
+        wind.x = cos(temp) * b->dynamics.wind_amplitude;
+        Color color = leaf->hp < 3 ? YELLOW : GREEN;
+        DrawCircle(b->end.x + wind.x, b->end.y + wind.y, 20, ColorAlpha(color, 0.8f));
     }
 }
 
@@ -127,6 +135,18 @@ void RecursiveTreeDraw(int length, int start_length, float angle){
     }
 }
 
-s_leaf* GetLeaf(s_tree* tree){
-    return &tree->leaves[0]; // Just return the first leaf
+s_leaf* GetLeaf(s_tree* tree) {
+    s_leaf* last_found_alive = NULL;
+
+    // Find a leaf that is online
+    for(int i = 0; i < MAX_LEAVES; i++){
+        if(tree->leaves[i].hp > 0){
+            last_found_alive = &tree->leaves[i];
+            if(GetRandomValue(0, 100) > 25){
+                return last_found_alive;
+            }
+        }
+    }
+
+    return last_found_alive;
 }

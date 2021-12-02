@@ -19,10 +19,8 @@ void StartGame(s_game* game){
     // Do object-based tree generation
     CreateTree(&game->tree);
 
-    // Spawn 10 attackers
-    for(int i = 0; i < 10; i++){
-        SpawnAttacker(&game->tree, &game->attackers[i]);
-    }
+    // Setup 
+    game->second_counter = 0;
 
     SetTargetFPS(60);
     RunGame(game); // Go further into it by starting the game loop
@@ -38,7 +36,13 @@ void RunGame(s_game* game) {
         // Update input related stuff
         InputGame(game);
         for(int i = 0; i < MAX_ATTACKERS; i++){
-            if(game->attackers[i].enabled) UpdateAttacker(&game->attackers[i]);
+            UpdateAttacker(&game->tree, &game->attackers[i]);
+        }
+
+        // Spawn attackers
+        if(GetTime() - game->second_counter >= 3){
+            game->second_counter = GetTime();
+            SpawnAttackers(game, 2);
         }
 
         BeginTextureMode(framebuffer_texture); // Enable so we draw to the framebuffer texture!
@@ -58,7 +62,7 @@ void RunGame(s_game* game) {
 
             // Render attackers
             for(int i = 0; i < MAX_ATTACKERS; i++){
-                if(game->attackers[i].enabled) RenderAttacker(&game->attackers[i]);
+                RenderAttacker(&game->attackers[i]);
             }
             
         EndMode2D();

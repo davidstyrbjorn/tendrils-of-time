@@ -3,11 +3,7 @@
 
 #include"raylib.h"
 
-#define MAX_BRANCHES 1028
-
-typedef struct s_leaf {
-    Vector2 position;
-} s_leaf;
+#include"constants.h"
 
 typedef struct s_dynamic_branch {
     // Trigonometric parameters so that every branch has a unique wind animation
@@ -25,9 +21,15 @@ typedef struct s_branch {
     s_dynamic_branch dynamics;
 } s_branch;
 
+typedef struct s_leaf {
+    Vector2 position;
+    int hp;
+    s_branch* attached_branch;
+} s_leaf;
+
 typedef struct s_tree {
     s_branch branches[MAX_BRANCHES];
-    s_leaf leaves[MAX_BRANCHES];
+    s_leaf leaves[MAX_LEAVES];
     int iteration_levels;
     int branch_count;
     int leaf_count;

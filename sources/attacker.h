@@ -11,6 +11,7 @@ it has succeded in the attack
 
 struct s_leaf; // leaf_to_attack forward declaration
 struct s_tree;
+struct s_game;
 
 typedef struct s_attacker {
     Vector2 position;
@@ -19,7 +20,8 @@ typedef struct s_attacker {
     bool enabled; 
 } s_attacker;
 
-void UpdateAttacker(s_attacker* attacker);
+void UpdateAttacker(struct s_tree* tree, s_attacker* attacker);
+void SpawnAttackers(struct s_game* game, int how_many);
 void SpawnAttacker(struct s_tree* tree, s_attacker* attacker);
 void RenderAttacker(s_attacker* attacker);
 

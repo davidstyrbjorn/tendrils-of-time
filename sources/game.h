@@ -4,8 +4,7 @@
 #include"raylib.h"
 #include"tree.h"
 #include"attacker.h"
-
-#define MAX_ATTACKERS 126
+#include"constants.h"
 
 typedef struct s_game {
     // Some game config data
@@ -21,6 +20,7 @@ typedef struct s_game {
     s_tree tree;
     // Attacker data
     s_attacker attackers[MAX_ATTACKERS];
+    int second_counter;
 } s_game;
 
 // Declare game related functions
@@ -28,6 +28,8 @@ void StartGame(s_game* game);
 void RunGame(s_game* game);
 void EndGame(s_game* game);
 void InputGame(s_game* game);
+
+void SpawnAttackers(s_game* game, int how_many);
 
 /* Moves these to a rendering.h file */
 void DrawCoordinateAxis();
