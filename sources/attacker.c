@@ -43,6 +43,7 @@ void SpawnAttacker(s_tree* tree, s_attacker* attacker){
     if(attacker->leaf_to_attack == NULL) return; // Found no leaf alive so just return
 
     attacker->speed = GetRandomValue(40.0f, 80.0f);
+    attacker->speed = 150.0f;
 
     attacker->position.y = GetRandomValue(0, GetScreenHeight());
 

@@ -1,5 +1,8 @@
 #version 330
 
+// I want this shader to run on a quad covering the entire background or
+// a quad that is gigantic in size which will act like a background
+
 in vec2 fragTexCoord;
 
 out vec4 fragColor;

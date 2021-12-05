@@ -1,0 +1,25 @@
+What we have
+a basic tree generator that works great for generating tree at various levels 
+(lacks height, would be nice to have a length factor to make it grow more on the y-axis instead of x-axis)
+
+Attacker that can spawn in and be disabled/killed and respawned which gets a random leaf assigned
+moves towards leaf and when at leaf, decreases that leafs hp, when leaf hp is zero it is "removed"
+
+What we need
+* Input from player to be able to defeat Attackers
+* System where the water needs to be watered at intervals or top branches will fall off
+* Input from player to be able to water the tree
+* Some kind of UI to present when the tree needs water
+* A ground for the tree to stand on
+* Serializing/deserializing the tree on-load to disk
+* Menu of some kind before the game + pause menu, use enum state design pattern for this keep it simple
+
+Player:
+Should be just a quad, perhaps the player is able to place ladders?
+The ladders would allow the player to scale the tree vertically 
+
+How is the player placing ladders?
+
+Or perhaps the player is able to place small plattforms to climb on
+
+In order to water the tree the player needs to climb down 

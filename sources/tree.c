@@ -142,7 +142,7 @@ s_leaf* GetLeaf(s_tree* tree) {
     for(int i = 0; i < MAX_LEAVES; i++){
         if(tree->leaves[i].hp > 0){
             last_found_alive = &tree->leaves[i];
-            if(GetRandomValue(0, 100) > 25){
+            if(GetRandomValue(0, 100) > 90){
                 return last_found_alive;
             }
         }

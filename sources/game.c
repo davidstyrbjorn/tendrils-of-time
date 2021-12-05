@@ -10,8 +10,9 @@
 #include"attacker.h"
 #include"lsystem.h"
 
-// L-System rule
 void StartGame(s_game* game){
+    game->game_state = PLAYING;
+
     InitWindow(game->window_size.x, game->window_size.y, game->title);
     
     // Setup camera
@@ -19,6 +20,10 @@ void StartGame(s_game* game){
 
     // Do object-based tree generation
     CreateTree(&game->tree);
+
+    // Create player
+    game->player.position = (Vector2){0.0, 0.0}
+    
 
     // Setup 
     game->second_counter = 0;
@@ -29,59 +34,33 @@ void StartGame(s_game* game){
 
 void RunGame(s_game* game) {
     // Setup post-processing stuff
-    Shader pp_shader = LoadShader(0, TextFormat(ASSETS_PATH"postprocessing.glsl", 330)); // Load bloom shader
-    RenderTexture2D framebuffer_texture = LoadRenderTexture(game->window_size.x, game->window_size.y);
+    game->pp_shader = LoadShader(0, TextFormat(ASSETS_PATH"postprocessing.glsl", 330)); // Load bloom shader
+    game->framebuffer_texture = LoadRenderTexture(game->window_size.x, game->window_size.y);
 
     while(!WindowShouldClose()){
 
         // Update input related stuff
         InputGame(game);
-        for(int i = 0; i < MAX_ATTACKERS; i++){
-            UpdateAttacker(&game->tree, &game->attackers[i]);
+        
+        switch(game->game_state){
+            case MENU:
+                RunMenu(game);
+                break;
+            case PLAYING:
+                RunPlaying(game);
+                break;
+            case PAUSED:
+                RunPaused(game);
+                break;
+            default:
+                printf("Invalid game state!!!!");
+                CloseWindow();
+                break;
         }
-
-        // Spawn attackers
-        if(GetTime() - game->second_counter >= 3){
-            game->second_counter = GetTime();
-            SpawnAttackers(game, 2);
-        }
-
-        BeginTextureMode(framebuffer_texture); // Enable so we draw to the framebuffer texture!
-        BeginMode2D(game->camera);
-
-            ClearBackground(SKYBLUE);
-
-            /* Draws the basis vectors from 0, 0 on x,y axis */
-            DrawCoordinateAxis();
-
-            // RecursiveTreeDraw(game->fractal_tree_start_length, 
-            // game->fractal_tree_start_length, 
-            // game->fractal_tree_angle);
-            //DrawLSystem(game->l_string, 14, 90, 1.001);
-
-            RenderTree(&game->tree);
-
-            // Render attackers
-            for(int i = 0; i < MAX_ATTACKERS; i++){
-                RenderAttacker(&game->attackers[i]);
-            }
-            
-        EndMode2D();
-        EndTextureMode(); // End framebuffer texture
-
-        BeginDrawing(); // Draw the actual post processed framebuffer
-
-            ClearBackground(WHITE);
-            BeginShaderMode(pp_shader);
-                // Flip the y due to how the default opengl coordinates work (left-bottom)
-                DrawTextureRec(framebuffer_texture.texture, (Rectangle){0, 0, (float)+framebuffer_texture.texture.width, (float)-framebuffer_texture.texture.height}, (Vector2){0.0, 0.0}, WHITE);
-            EndShaderMode();
-
-        EndDrawing();
     }
 
+    //TODO(david): Make sure all memeory is deallocated please and thank you!
     CloseWindow();
-
 }
 
 void EndGame(s_game* game) {
@@ -138,5 +117,59 @@ void InputGame(s_game* game) {
     } else if(IsKeyDown(KEY_X)){
         game->camera.zoom -= 1.f * GetFrameTime();
     }
+}
 
+/* RUNNERS */
+
+void RunMenu(s_game* game){
+
+}
+
+void RunPaused(s_game* game){
+
+}
+
+void RunPlaying(s_game* game){
+        for(int i = 0; i < MAX_ATTACKERS; i++){
+            UpdateAttacker(&game->tree, &game->attackers[i]);
+        }
+
+        // Spawn attackers
+        if(GetTime() - game->second_counter >= 3){
+            game->second_counter = GetTime();
+            SpawnAttackers(game, 2);
+        }
+
+        BeginTextureMode(game->framebuffer_texture); // Enable so we draw to the framebuffer texture!
+        BeginMode2D(game->camera);
+
+            ClearBackground(SKYBLUE);
+
+            /* Draws the basis vectors from 0, 0 on x,y axis */
+            DrawCoordinateAxis();
+
+            // RecursiveTreeDraw(game->fractal_tree_start_length, 
+            // game->fractal_tree_start_length, 
+            // game->fractal_tree_angle);
+            //DrawLSystem(game->l_string, 14, 90, 1.001);
+
+            RenderTree(&game->tree);
+
+            // Render attackers
+            for(int i = 0; i < MAX_ATTACKERS; i++){
+                RenderAttacker(&game->attackers[i]);
+            }
+            
+        EndMode2D();
+        EndTextureMode(); // End framebuffer texture
+
+        BeginDrawing(); // Draw the actual post processed framebuffer
+
+            ClearBackground(WHITE);
+            BeginShaderMode(game->pp_shader);
+                // Flip the y due to how the default opengl coordinates work (left-bottom)
+                DrawTextureRec(game->framebuffer_texture.texture, (Rectangle){0, 0, (float)+game->framebuffer_texture.texture.width, (float)-game->framebuffer_texture.texture.height}, (Vector2){0.0, 0.0}, WHITE);
+            EndShaderMode();
+
+        EndDrawing();
 }
