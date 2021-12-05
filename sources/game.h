@@ -18,6 +18,7 @@ typedef struct s_game {
     Shader pp_shader;
     RenderTexture2D framebuffer_texture;
     s_player player;
+    Rectangle ground;
     // Some game config data
     const char* title;
     Vector2 window_size;

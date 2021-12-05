@@ -14,21 +14,8 @@ void StartGame(s_game* game){
     game->game_state = PLAYING;
 
     InitWindow(game->window_size.x, game->window_size.y, game->title);
-    
-    // Setup camera
-    game->camera.zoom = 1.0f;
 
-    // Do object-based tree generation
-    CreateTree(&game->tree);
-
-    // Create player
-    game->player.position = (Vector2){0.0, 0.0}
-    
-
-    // Setup 
-    game->second_counter = 0;
-
-    SetTargetFPS(60);
+    SetTargetFPS(144);
     RunGame(game); // Go further into it by starting the game loop
 }
 
@@ -37,10 +24,40 @@ void RunGame(s_game* game) {
     game->pp_shader = LoadShader(0, TextFormat(ASSETS_PATH"postprocessing.glsl", 330)); // Load bloom shader
     game->framebuffer_texture = LoadRenderTexture(game->window_size.x, game->window_size.y);
 
+    int loc = GetShaderLocation(game->pp_shader, "pixel_w");
+    //SetShaderValue(game->pp_shader, loc, 1, SHADER_UNIFORM_FLOAT);
+    game->pp_shader.locs[0] = loc;
+    // TODO(dave): Fix this crashes the game?
+    // SetShaderValue(game->pp_shader, 0, (const void*)1, SHADER_UNIFORM_FLOAT);
+
+    // Create the ground object
+    game->ground.width = 3000;
+    game->ground.height = game->window_size.y * 0.1f;
+    game->ground.x = -game->ground.width/2;
+    game->ground.y = game->window_size.y-game->ground.height;
+
+    // Setup camera
+    game->camera.zoom = 1.0f;
+
+    // Do object-based tree generation
+    CreateTree(&game->tree, (Vector2){0.0, -game->ground.height});
+
+    // Create player
+    float player_height = 80;
+    float player_width = 40;
+    game->player.rect = (Rectangle){100, game->window_size.y - game->ground.height - player_height, player_width, player_height};
+    game->player.color = (Color){200, 100, 200, 255}; 
+    game->player.horizontal_speed = 10000;
+    game->player.mass = 10;
+    game->player.air_resistance = 50;
+
+    // Setup other
+    game->second_counter = 0;
+
     while(!WindowShouldClose()){
 
         // Update input related stuff
-        InputGame(game);
+        //InputGame(game);
         
         switch(game->game_state){
             case MENU:
@@ -130,15 +147,17 @@ void RunPaused(s_game* game){
 }
 
 void RunPlaying(s_game* game){
-        for(int i = 0; i < MAX_ATTACKERS; i++){
-            UpdateAttacker(&game->tree, &game->attackers[i]);
-        }
+        // for(int i = 0; i < MAX_ATTACKERS; i++){
+        //     UpdateAttacker(&game->tree, &game->attackers[i]);
+        // }
 
         // Spawn attackers
-        if(GetTime() - game->second_counter >= 3){
-            game->second_counter = GetTime();
-            SpawnAttackers(game, 2);
-        }
+        // if(GetTime() - game->second_counter >= 3){
+        //     game->second_counter = GetTime();
+        //     SpawnAttackers(game, 2);
+        // }
+
+        UpdatePlayer(&game->player, game);
 
         BeginTextureMode(game->framebuffer_texture); // Enable so we draw to the framebuffer texture!
         BeginMode2D(game->camera);
@@ -146,14 +165,20 @@ void RunPlaying(s_game* game){
             ClearBackground(SKYBLUE);
 
             /* Draws the basis vectors from 0, 0 on x,y axis */
-            DrawCoordinateAxis();
+            //DrawCoordinateAxis();
 
-            // RecursiveTreeDraw(game->fractal_tree_start_length, 
-            // game->fractal_tree_start_length, 
-            // game->fractal_tree_angle);
-            //DrawLSystem(game->l_string, 14, 90, 1.001);
+            // Render ground
+            //DrawRectanglePro(game->ground, (Vector2){0.0, 0.0}, 0, BROWN);
+            DrawRectangleGradientV(
+                game->ground.x, game->ground.y, game->ground.width, game->ground.height,
+                GREEN, BROWN
+            );
 
+            // Renders the tree object
             RenderTree(&game->tree);
+
+            // Render player
+            RenderPlayer(&game->player);
 
             // Render attackers
             for(int i = 0; i < MAX_ATTACKERS; i++){

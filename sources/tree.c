@@ -49,7 +49,7 @@ s_branch SpawnBranch(s_branch* from, int direction){
     return new_branch;
 }
 
-void CreateTree(s_tree* tree) {
+void CreateTree(s_tree* tree, Vector2 origin) {
     tree->base_length = 100.0f;
     tree->base_thickness = 15.0f;
     tree->branch_count = 1;
@@ -58,9 +58,11 @@ void CreateTree(s_tree* tree) {
 
     // Setup first branch
     tree->branches[0].done = false;
-    tree->branches[0].start = (Vector2){GetScreenWidth()/2, GetScreenHeight()};
+    tree->branches[0].start = 
+        Vector2Add(origin, (Vector2){GetScreenWidth()/2, GetScreenHeight()});
     tree->branches[0].length = tree->base_length;
-    tree->branches[0].end = (Vector2){GetScreenWidth()/2, GetScreenHeight()-tree->base_length};
+    tree->branches[0].end = 
+        Vector2Add(origin, (Vector2){GetScreenWidth()/2, GetScreenHeight()-tree->base_length});
 
     for(int i = 0; i < tree->iteration_levels; i++){
         int frozen_branch_count = tree->branch_count;

@@ -44,7 +44,7 @@ s_branch SpawnBranch(s_branch* from, int direction);
 // Draw using rlgl immediate mode
 void RecursiveTreeDraw(int length, int start_length, float angle);
 
-void CreateTree(s_tree* tree);
+void CreateTree(s_tree* tree, Vector2 origin);
 void RenderTree(s_tree* tree);
 s_leaf* GetLeaf(s_tree* tree);
 
