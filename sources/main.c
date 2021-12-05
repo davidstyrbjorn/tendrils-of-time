@@ -8,7 +8,7 @@ int main(void)
 
     // Basic configuration for game
     s_game game = {0};
-    game.title = "Tree. =_=$€";
+    game.title = "Tendrils Of Time";
     game.window_size = (Vector2){800, 600};
 
     // Entrypoint

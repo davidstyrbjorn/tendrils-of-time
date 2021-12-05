@@ -10,9 +10,9 @@ What we need
 * System where the water needs to be watered at intervals or top branches will fall off
 * Input from player to be able to water the tree
 * Some kind of UI to present when the tree needs water
-* A ground for the tree to stand on
 * Serializing/deserializing the tree on-load to disk
 * Menu of some kind before the game + pause menu, use enum state design pattern for this keep it simple
+* Procedural grass
 
 Player:
 Should be just a quad, perhaps the player is able to place ladders?

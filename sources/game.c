@@ -3,8 +3,10 @@
 #include<stdlib.h>
 
 #include"raylib.h"
-#include"raymath.h"
 #include"rlgl.h"
+#include"raymath.h"
+
+#include"external/glad.h"
 
 #include"tree.h"
 #include"attacker.h"
@@ -14,6 +16,8 @@ void StartGame(s_game* game){
     game->game_state = PLAYING;
 
     InitWindow(game->window_size.x, game->window_size.y, game->title);
+    InitAudioDevice();
+    SetMasterVolume(1.0f);
 
     SetTargetFPS(144);
     RunGame(game); // Go further into it by starting the game loop
@@ -30,6 +34,13 @@ void RunGame(s_game* game) {
     // TODO(dave): Fix this crashes the game?
     // SetShaderValue(game->pp_shader, 0, (const void*)1, SHADER_UNIFORM_FLOAT);
 
+    // Create background shader and setup background rectangle
+    game->background_shader = LoadShader(0, TextFormat(ASSETS_PATH"background.glsl", 330));
+    Image imBlank = GenImageColor(game->window_size.x, game->window_size.y, BLANK);
+    game->background_texture = LoadTextureFromImage(imBlank);  // Load blank texture to fill on shader
+    UnloadImage(imBlank);
+    game->time_location = glGetUniformLocation(game->background_shader.id, "time");
+
     // Create the ground object
     game->ground.width = 3000;
     game->ground.height = game->window_size.y * 0.1f;
@@ -42,6 +53,13 @@ void RunGame(s_game* game) {
     // Do object-based tree generation
     CreateTree(&game->tree, (Vector2){0.0, -game->ground.height});
 
+    // Generate grass
+    game->grass.density = 15;
+    game->grass.origin = (Vector2){game->window_size.x/2, game->window_size.y-game->ground.height};
+    game->grass.horizontal_span = game->window_size.x/2;
+    game->grass.height = 10;
+    PopulateGrassField(&game->grass);
+
     // Create player
     float player_height = 80;
     float player_width = 40;
@@ -53,11 +71,15 @@ void RunGame(s_game* game) {
 
     // Setup other
     game->second_counter = 0;
+    game->bg_music = LoadMusicStream(ASSETS_PATH"tree_game.mp3");
+    PlayMusicStream(game->bg_music);
 
     while(!WindowShouldClose()){
 
         // Update input related stuff
-        //InputGame(game);
+        InputGame(game); 
+
+        UpdateMusicStream(game->bg_music); 
         
         switch(game->game_state){
             case MENU:
@@ -77,6 +99,11 @@ void RunGame(s_game* game) {
     }
 
     //TODO(david): Make sure all memeory is deallocated please and thank you!
+    UnloadMusicStream(game->bg_music);
+    UnloadShader(game->pp_shader);
+    UnloadShader(game->background_shader);
+
+    CloseAudioDevice();
     CloseWindow();
 }
 
@@ -95,39 +122,19 @@ void DrawCoordinateAxis() {
 }
 
 void InputGame(s_game* game) {
-    Vector2 moveVector = { 0 };
+    if(IsKeyPressed(KEY_M)){
+        if(IsMusicStreamPlaying(game->bg_music)){
+            PauseMusicStream(game->bg_music);
+        }else{
+            ResumeMusicStream(game->bg_music);
+        }
+    }     
 
-    bool boosted = IsKeyDown(KEY_LEFT_SHIFT);
-    
-    if (IsKeyDown(KEY_D)) {
-        moveVector.x--;
+    if(IsKeyDown(KEY_LEFT)){
+        game->camera.offset.x -= 100 * GetFrameTime();
+    }else if(IsKeyDown(KEY_RIGHT)){
+        game->camera.offset.x += 100 * GetFrameTime();
     }
-    else if (IsKeyDown(KEY_A)) {
-        moveVector.x++;
-    }
-
-    if (IsKeyDown(KEY_S)) {
-        moveVector.y--;
-    }
-    else if (IsKeyDown(KEY_W)) {
-        moveVector.y++;
-    }
-
-    float cameraSpeed = 140.f;
-    if(boosted) cameraSpeed *= 3.f;
-
-    // Scale with delta time
-    moveVector = Vector2Scale(moveVector, cameraSpeed*GetFrameTime());
-
-    // Move camera
-    game->camera.offset = Vector2Add(game->camera.offset, moveVector);
-
-    // Angle input thing
-    if(IsKeyDown(KEY_UP)){
-        game->fractal_tree_angle += 10.0f * GetFrameTime();
-    }else if(IsKeyDown(KEY_DOWN)){
-        game->fractal_tree_angle += -10.0f * GetFrameTime();
-    }   
 
     if(IsKeyDown(KEY_Z)){
         game->camera.zoom += 1.f * GetFrameTime();
@@ -147,54 +154,69 @@ void RunPaused(s_game* game){
 }
 
 void RunPlaying(s_game* game){
-        // for(int i = 0; i < MAX_ATTACKERS; i++){
-        //     UpdateAttacker(&game->tree, &game->attackers[i]);
-        // }
+    // for(int i = 0; i < MAX_ATTACKERS; i++){
+    //     UpdateAttacker(&game->tree, &game->attackers[i]);
+    // }
 
-        // Spawn attackers
-        // if(GetTime() - game->second_counter >= 3){
-        //     game->second_counter = GetTime();
-        //     SpawnAttackers(game, 2);
-        // }
+    // Spawn attackers
+    // if(GetTime() - game->second_counter >= 3){
+    //     game->second_counter = GetTime();
+    //     SpawnAttackers(game, 2);
+    // }
 
-        UpdatePlayer(&game->player, game);
+    UpdatePlayer(&game->player, game);
 
-        BeginTextureMode(game->framebuffer_texture); // Enable so we draw to the framebuffer texture!
-        BeginMode2D(game->camera);
+    // Update time for background shader
+    float time = (float)GetTime();
+    glUseProgram(game->background_shader.id);
+    glUniform1f(game->time_location, time);
+    glUseProgram(0);
+    //SetShaderValue(game->background_shader, game->time_location, (const void*)1, SHADER_UNIFORM_FLOAT);
 
-            ClearBackground(SKYBLUE);
+    BeginTextureMode(game->framebuffer_texture); // Enable so we draw to the framebuffer texture!
+    BeginMode2D(game->camera);
 
-            /* Draws the basis vectors from 0, 0 on x,y axis */
-            //DrawCoordinateAxis();
+        ClearBackground(SKYBLUE);
 
-            // Render ground
-            //DrawRectanglePro(game->ground, (Vector2){0.0, 0.0}, 0, BROWN);
-            DrawRectangleGradientV(
-                game->ground.x, game->ground.y, game->ground.width, game->ground.height,
-                GREEN, BROWN
-            );
+        // Render background
+        BeginShaderMode(game->background_shader);
+            DrawTexture(game->background_texture, 0, 0, WHITE);
+        EndShaderMode();
 
-            // Renders the tree object
-            RenderTree(&game->tree);
+        /* Draws the basis vectors from 0, 0 on x,y axis */
+        //DrawCoordinateAxis();
 
-            // Render player
-            RenderPlayer(&game->player);
+        // Render ground
+        //DrawRectanglePro(game->ground, (Vector2){0.0, 0.0}, 0, BROWN);
+        // DrawRectangleGradientV(
+        //     game->ground.x, game->ground.y, game->ground.width, game->ground.height,
+        //     GREEN, BROWN
+        // );
 
-            // Render attackers
-            for(int i = 0; i < MAX_ATTACKERS; i++){
-                RenderAttacker(&game->attackers[i]);
-            }
-            
-        EndMode2D();
-        EndTextureMode(); // End framebuffer texture
+        // Renders the tree object
+        RenderTree(&game->tree);
+        // Render grass
+        RenderGrass(&game->grass);
 
-        BeginDrawing(); // Draw the actual post processed framebuffer
+        // Render player
+        RenderPlayer(&game->player);
 
-            ClearBackground(WHITE);
-            BeginShaderMode(game->pp_shader);
-                // Flip the y due to how the default opengl coordinates work (left-bottom)
-                DrawTextureRec(game->framebuffer_texture.texture, (Rectangle){0, 0, (float)+game->framebuffer_texture.texture.width, (float)-game->framebuffer_texture.texture.height}, (Vector2){0.0, 0.0}, WHITE);
-            EndShaderMode();
+        // Render attackers
+        for(int i = 0; i < MAX_ATTACKERS; i++){
+            RenderAttacker(&game->attackers[i]);
+        }
+        
+    EndMode2D();
+    EndTextureMode(); // End framebuffer texture
 
-        EndDrawing();
+    BeginDrawing(); // Draw the actual post processed framebuffer
+
+        ClearBackground(WHITE);
+
+        BeginShaderMode(game->pp_shader);
+            // Flip the y due to how the default opengl coordinates work (left-bottom)
+            DrawTextureRec(game->framebuffer_texture.texture, (Rectangle){0, 0, (float)+game->framebuffer_texture.texture.width, (float)-game->framebuffer_texture.texture.height}, (Vector2){0.0, 0.0}, WHITE);
+        EndShaderMode();
+
+    EndDrawing();
 }

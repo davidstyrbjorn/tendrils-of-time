@@ -3,7 +3,7 @@
 
 #include"raylib.h"
 
-typedef struct s_game;
+typedef struct s_game s_game;
 
 typedef struct s_player {
     Rectangle rect;

@@ -6,6 +6,7 @@
 #include"attacker.h"
 #include"constants.h"
 #include"player.h"
+#include"grass.h"
 
 typedef enum GAME_STATE {
     MENU,
@@ -15,10 +16,12 @@ typedef enum GAME_STATE {
 
 typedef struct s_game {
     GAME_STATE game_state;
-    Shader pp_shader;
+    Shader pp_shader, background_shader;
     RenderTexture2D framebuffer_texture;
     s_player player;
     Rectangle ground;
+    Texture background_texture;
+    int time_location;
     // Some game config data
     const char* title;
     Vector2 window_size;
@@ -30,9 +33,12 @@ typedef struct s_game {
     char* l_string;
     // Object based tree rendering
     s_tree tree;
+    s_grass grass;
     // Attacker data
     s_attacker attackers[MAX_ATTACKERS];
     int second_counter;
+    // Sound
+    Music bg_music;
 } s_game;
 
 // Declare game related functions
