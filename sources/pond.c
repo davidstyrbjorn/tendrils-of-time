@@ -4,7 +4,7 @@
 
 void CreatePond(s_pond* pond) {
     pond->shader = LoadShader(0, TextFormat(ASSETS_PATH"water.glsl", 330));
-    Image imBlank = GenImageColor(pond->width, 600, BLANK);
+    Image imBlank = GenImageColor(pond->width, 300, BLANK);
     pond->water_texture = LoadTextureFromImage(imBlank);
     UnloadImage(imBlank);
     pond->time_location = glGetUniformLocation(pond->shader.id, "time");

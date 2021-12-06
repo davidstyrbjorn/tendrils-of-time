@@ -64,13 +64,15 @@ void RunGame(s_game* game) {
     PopulateGrassField(&game->grass);
 
     // Create the pond
-    game->pond.origin = (Vector2){game->window_size.x*0.8, game->window_size.y-game->ground.height};
+    game->pond.origin = (Vector2){game->window_size.x*0.8, game->window_size.y-game->ground.height*0.8};    
     game->pond.width = game->window_size.x*0.2;
     CreatePond(&game->pond);
 
     // Create player
     float player_height = 80;
     float player_width = 40;
+    game->player.slurp_sound = LoadSound(ASSETS_PATH"slurp.wav");
+    game->player.has_water = false;
     game->player.rect = (Rectangle){100, game->window_size.y - game->ground.height - player_height, player_width, player_height};
     game->player.color = (Color){200, 100, 200, 255}; 
     game->player.horizontal_speed = 12500;
@@ -111,6 +113,7 @@ void RunGame(s_game* game) {
     UnloadShader(game->background_shader);
     DestructTree(&game->tree);
     UnloadPond(&game->pond);
+    UnloadSound(game->player.slurp_sound);
 
     CloseAudioDevice();
     CloseWindow();

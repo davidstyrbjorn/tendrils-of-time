@@ -184,27 +184,27 @@ out vec4 fragColor;
 uniform float time;
 
 void main(void)
-{
-    vec2 uv = fragTexCoord;
-    const vec2 nscale = 4.0*vec2(1.0,2.0); // Waves
-    const float tscale = 2.0; // Tiles
-    vec2 v = nscale*(uv-0.5)+vec2(time*0.2,time);
-    const vec2 p = vec2(0.0, 0.0);
-    float alpha = 4.0*time;
-    vec2 g;
-     
-    float n = psrdnoise(v, p, alpha, g);
-    float w = clamp(0.6-uv.t + 0.01*n, 0.0, 1.0);
-    w += 0.2*smoothstep(0.0, 0.1, w);
-    float mask = aastep(0.01,w); // "This is water"
-    vec2 vwarp = (uv-0.5)*tscale + 0.05*w*g*vec2(1.0,2.0);
- 
-    float tiles = gridlines(vwarp, vec2(1.0, 1.0), 0.05);
-    vec3 tilecol = vec3(0.3,0.7,1.0);
-    vec3 groutcol = vec3(0.3,0.3,0.8);
-    vec4 watercol = vec4(1.0,1.0,1.0,0.3);
-    vec3 mixcol = mix(tilecol, groutcol, tiles);
-    mixcol = mix(mixcol, watercol.rgb, mask*watercol.a);
- 
-    fragColor = vec4(mixcol, 1.0);
+{ 
+  vec2 st = 1.0 - fragTexCoord;
+  const float nscale = 4.0;
+  vec2 v = nscale * (st-0.5);
+  const vec2 p = vec2(0.0, 0.0);
+  float alpha = time*3;      
+  vec2 g, gsum;
+  float n = 0.5;
+  
+  float warpamount = clamp(1.1-st.t*1.2, 0.0, 1.0);
+  n += 0.4 * psrdnoise(v, p, alpha, g);
+  gsum = g;
+  vec2 warped_v = v*2.0+0.15*warpamount*gsum;
+  n += 0.2 * psrdnoise(warped_v, p*2.0, alpha*2.0, g);
+
+  // Creating the wave
+  float y_base = 0.975;
+  float wave_speed = 2;
+  float sinus = y_base + sin(st.x + time*wave_speed) * (1 - y_base);
+  float a = step(st.y, sinus);
+  
+  vec4 noisecolor = vec4(0.72, 0.95, 0.4 + 0.6*n, a);
+  fragColor = noisecolor;
 }

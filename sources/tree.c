@@ -13,7 +13,7 @@
 
 #define MAX_RECURSION 4
 
-#define DECAY_FACTOR .1f
+#define DECAY_FACTOR 0
 
 Vector2 rotate_point(float cx, float cy, float angle, Vector2 p){
     return (Vector2){cos(angle) * (p.x - cx) - sin(angle) * (p.y - cy) + cx,

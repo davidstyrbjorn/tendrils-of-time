@@ -26,7 +26,6 @@ void RenderGrass(s_grass* grass){
         s_straw straw = grass->straws[i];
         // Render a rectangle
         const float blow_factor = sin(GetTime()*grass->blow_frequency + straw.trig_offset) * grass->triangle_span*2;
-
         DrawTriangle(
             (Vector2){straw.position.x + blow_factor, straw.position.y - straw.height}, 
             (Vector2){straw.position.x-grass->triangle_span, straw.position.y}, 
