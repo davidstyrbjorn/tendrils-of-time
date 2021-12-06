@@ -58,81 +58,96 @@ void CreateTree(s_tree* tree, Vector2 origin) {
     tree->leaf_count = 0;
     tree->health = 1;
 
+    // Create "dynamic" arrays
     tree->dropped_branches = vector_create();
+    tree->branches = vector_create();
 
     // Setup first branch
-    tree->branches[0].done = false;
-    tree->branches[0].start = 
+    s_branch* b = vector_add_asg(&tree->branches);
+    b->done = false;
+    b->start = 
         Vector2Add(origin, (Vector2){GetScreenWidth()/2, GetScreenHeight()});
-    tree->branches[0].length = tree->base_length;
-    tree->branches[0].end = 
+    b->length = tree->base_length;
+    b->end = 
         Vector2Add(origin, (Vector2){GetScreenWidth()/2, GetScreenHeight()-tree->base_length});
+    b = NULL;
 
     for(int i = 0; i < tree->iteration_levels; i++){
-        int frozen_branch_count = tree->branch_count;
+        int frozen_branch_count = vector_size(tree->branches);
         for(int j = 0; j < frozen_branch_count; j++){
             if(!tree->branches[j].done){
+                tree->branches[j].done = true; // Mark this branch as done
                 // Spawn 2 branches and insert to the end of branch list
-                tree->branches[j].done = true;
-                tree->branches[tree->branch_count] = SpawnBranch(&tree->branches[j], 1);
-                tree->branch_count++;
-                tree->branches[tree->branch_count] = SpawnBranch(&tree->branches[j], -1);
-                tree->branch_count++;
+                s_branch* b1 = vector_add_asg(&tree->branches);
+                *b1 = SpawnBranch(&tree->branches[j], 1);
+                b1 = NULL;
+                s_branch* b2 = vector_add_asg(&tree->branches);
+                *b2 = SpawnBranch(&tree->branches[j], -1);
+                b2 = NULL;
             }
         }
     }
 
     // Do pass and find leaves
-    for(int i = 0; i < tree->branch_count; i++){
-        if(!tree->branches[i].done){
-            // Found leaf!
-            tree->leaves[tree->leaf_count].position = tree->branches[i].end;
-            tree->leaves[tree->leaf_count].hp = 3; 
-            tree->leaves[tree->leaf_count].attached_branch = &tree->branches[i];
-            tree->leaf_count++;
-        }
-    }
+    // for(int i = 0; i < tree->branch_count; i++){
+    //     if(!tree->branches[i].done){
+    //         // Found leaf!
+    //         tree->leaves[tree->leaf_count].position = tree->branches[i].end;
+    //         tree->leaves[tree->leaf_count].hp = 3; 
+    //         tree->leaves[tree->leaf_count].attached_branch = &tree->branches[i];
+    //         tree->leaf_count++;
+    //     }
+    // }
 }
 
 void UpdateTree(s_tree* tree){
-    tree->health -= DECAY_FACTOR * GetFrameTime(); // Decrease tree health
+    float dt = GetFrameTime();
+    tree->health -= DECAY_FACTOR*4 * dt; // Decrease tree health
 
     if(tree->health < 0){
         // Tree is dying! Drop a branch and increase hp some
         DropBranchAndIncreaseHealth(tree);
-        printf("%i\n", vector_size(tree->dropped_branches));
     }
     if(tree->health > 1.1f){
         // Tree is very healthy! Grow the tree and decreate health
         GrowTree(tree);
     }
+
+    for(int i = 0; i < vector_size(tree->dropped_branches); i++){
+        // Increase branch offset
+        tree->dropped_branches[i].offset = Vector2Add(
+            tree->dropped_branches[i].offset, (Vector2){0.0, 150.0f*dt});
+
+        // Fade it out
+        Color color = BROWN;
+        float t = 1.0f - Clamp((GetTime() - tree->dropped_branches[i].spawn_time) / 2.5f, 0.0f, 1.0f);
+        printf("%.3f\n", t);
+        color.a = LinearInterpolate(0.0f, 255.0f, t);
+        tree->dropped_branches[i].color = color;
+
+        // If it has reached a clear color, remove it from the dropped branch list
+    }
 }
 
 void RenderTree(s_tree* tree){
     // Branches
-    for(int i = 0; i < tree->branch_count; i++){
+    for(int i = 0; i < vector_size(tree->branches); i++){
         // Branch thickness based on length of the branch, see tree->base_thickness & length
         s_branch* b = &tree->branches[i];
         float ratio = b->length / tree->base_length;
         DrawLineEx(b->start, b->end, tree->base_thickness*ratio, BROWN);
-    }
-    // Leaves
-    for(int i = 0; i < MAX_LEAVES; i++){
-        s_leaf* leaf = &tree->leaves[i];
-        if(leaf->hp == 0) continue;
 
-        // Render the leaf
-        Vector2 wind = {0};
-        s_branch* b = leaf->attached_branch;
-        // float temp = b->dynamics.wind_offset + b->dynamics.wind_frequency*GetTime();
-        // wind.x = cos(temp) * b->dynamics.wind_amplitude;
-        Color color = leaf->hp < 3 ? YELLOW : GREEN;
-        DrawCircle(b->end.x + wind.x, b->end.y + wind.y, 20, ColorAlpha(color, 0.8f));
+        if(!b->done){
+             DrawCircle(b->end.x, b->end.y, 20, ColorAlpha(GREEN, 0.8f));
+        }
     }
     // Dropped branches
     for(int i = 0; i < vector_size(tree->dropped_branches); i++){
         s_dropped_branch dropped_branch = tree->dropped_branches[i];
-        DrawCircleV(dropped_branch.branch_copy.end, 60, RED);
+        float ratio = dropped_branch.branch_copy.length / tree->base_length;
+        Vector2 start = Vector2Add(dropped_branch.branch_copy.start, dropped_branch.offset);
+        Vector2 end = Vector2Add(dropped_branch.branch_copy.end, dropped_branch.offset);
+        DrawLineEx(start, end, tree->base_thickness*ratio, dropped_branch.color);
     }
 }
 
@@ -160,36 +175,26 @@ void RecursiveTreeDraw(int length, int start_length, float angle){
     }
 }
 
-s_leaf* GetLeaf(s_tree* tree) {
-    s_leaf* last_found_alive = NULL;
-
-    // Find a leaf that is online
-    for(int i = 0; i < MAX_LEAVES; i++){
-        if(tree->leaves[i].hp > 0){
-            last_found_alive = &tree->leaves[i];
-            if(GetRandomValue(0, 100) > 90){
-                return last_found_alive;
-            }
-        }
-    }
-
-    return last_found_alive;
-}
-
 void DropBranchAndIncreaseHealth(s_tree* tree) {
-    tree->health += 0.5f;
+    tree->health += 1000;
     s_dropped_branch* dropped_branch = vector_add_asg(&tree->dropped_branches);
-    dropped_branch->branch_copy = tree->branches[tree->branch_count-1];
+    // Find a branch that is done == true
+    dropped_branch->branch_copy = tree->branches[vector_size(tree->branches)-1];
+    dropped_branch->offset = (Vector2){0.0, 0.0};
+    dropped_branch->spawn_time = GetTime();
     dropped_branch = NULL; // Stop using, the element is initalized
 
-    tree->branch_count--;
+    vector_remove(&tree->branches, vector_size(tree->branches)-1);
 }
 
 void GrowTree(s_tree* tree) {
 
 }
 
+// Free memory from tree
 void DestructTree(s_tree* tree){
+    vector_erase(tree->branches, 0, vector_size(tree->branches));
     vector_erase(tree->dropped_branches, 0, vector_size(tree->dropped_branches)); // Erase all elements
+    free(tree->branches);
     free(tree->dropped_branches);
 }

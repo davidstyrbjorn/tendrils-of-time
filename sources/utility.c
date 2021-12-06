@@ -9,3 +9,7 @@ float GetRandomFloatValue(float min, float max){
 float GetRandomFloatValue01(){
     return GetRandomFloatValue(0.0f, 1.0f);
 }
+
+float LinearInterpolate(float a, float b, float t){
+    return a * (1-t) + b * t;
+}

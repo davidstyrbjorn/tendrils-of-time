@@ -190,5 +190,5 @@ void main()
  
     vec3 noisecolor = vec3(0.5+0.4*n);
 
-    fragColor = vec4(0.35*noisecolor.r, 0.73*noisecolor.g, 0.9, 1);
+    fragColor = vec4(0.3*noisecolor.r, 0.73*noisecolor.g, 1.0, 1);
 }  

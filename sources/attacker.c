@@ -12,6 +12,7 @@
 #define SOME_THRESHOLD 0.1
 
 void UpdateAttacker(s_tree* tree, s_attacker* attacker){
+    /*
     if(!attacker->enabled || attacker->leaf_to_attack == NULL) return;
 
     // Is our target dead? Find another one
@@ -35,10 +36,12 @@ void UpdateAttacker(s_tree* tree, s_attacker* attacker){
     //Vector2 moveDirection = Vector2Normalize(Vector2Subtract(attacker->leaf_to_attack->position, attacker->position)); // Get normalized direction
     //Vector2 newPosition = Vector2Add(attacker->position, Vector2Scale(moveDirection, attacker->speed*GetFrameTime())); // Get the new attacker position
     attacker->position = newPosition;
+    */
 }
 
 // Setup the given attacker on a new leaf
 void SpawnAttacker(s_tree* tree, s_attacker* attacker){
+    /*
     attacker->leaf_to_attack = GetLeaf(tree); // Grab a random leaf for the attacker
     if(attacker->leaf_to_attack == NULL) return; // Found no leaf alive so just return
 
@@ -54,6 +57,7 @@ void SpawnAttacker(s_tree* tree, s_attacker* attacker){
     }
 
     attacker->enabled = true;
+    */
 }
 
 void SpawnAttackers(s_game* game, int how_many){

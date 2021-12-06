@@ -7,4 +7,6 @@ float GetRandomFloatValue(float min, float max);
 
 float GetRandomFloatValue01();
 
+float LinearInterpolate(float a, float b, float t);
+
 #endif

@@ -23,17 +23,13 @@ typedef struct s_branch {
 
 typedef struct s_dropped_branch {
     s_branch branch_copy;
+    Vector2 offset;
+    Color color;
+    double spawn_time;
 } s_dropped_branch;
 
-typedef struct s_leaf {
-    Vector2 position;
-    int hp;
-    s_branch* attached_branch;
-} s_leaf;
-
 typedef struct s_tree {
-    s_branch branches[MAX_BRANCHES];
-    s_leaf leaves[MAX_LEAVES];
+    s_branch* branches;
     s_dropped_branch* dropped_branches;
     int iteration_levels;
     int branch_count;
@@ -53,7 +49,6 @@ void RecursiveTreeDraw(int length, int start_length, float angle);
 void CreateTree(s_tree* tree, Vector2 origin);
 void UpdateTree(s_tree* tree);
 void RenderTree(s_tree* tree);
-s_leaf* GetLeaf(s_tree* tree);
 void DestructTree(s_tree* tree);
 
 void DropBranchAndIncreaseHealth(s_tree* tree);
