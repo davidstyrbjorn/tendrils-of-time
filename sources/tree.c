@@ -113,19 +113,27 @@ void UpdateTree(s_tree* tree){
         GrowTree(tree);
     }
 
+    int delete_count = 0;
+    float time = GetTime();
     for(int i = 0; i < vector_size(tree->dropped_branches); i++){
         // Increase branch offset
         tree->dropped_branches[i].offset = Vector2Add(
-            tree->dropped_branches[i].offset, (Vector2){0.0, 150.0f*dt});
-
+            tree->dropped_branches[i].offset, (Vector2){0.0, 50.0f*dt});
+        s_dropped_branch dropped = tree->dropped_branches[i];
         // Fade it out
-        Color color = BROWN;
-        float t = 1.0f - Clamp((GetTime() - tree->dropped_branches[i].spawn_time) / 2.5f, 0.0f, 1.0f);
-        printf("%.3f\n", t);
-        color.a = LinearInterpolate(0.0f, 255.0f, t);
-        tree->dropped_branches[i].color = color;
-
+        float t = tree->dropped_branches[i].spawn_time - time;
+        //float a = LinearInterpolate(0.0f, 1.0f, t);
+        //tree->dropped_branches[i].color = ColorAlpha(BROWN, a);
+        tree->dropped_branches[i].color = BROWN;
         // If it has reached a clear color, remove it from the dropped branch list
+        if(t <= -3.0f){
+            tree->indices_to_delete[delete_count] = i;
+            delete_count++;
+        }
+    }
+    // Go through and delete dropped branches
+    for(int i = 0; i < delete_count; i++){
+        vector_remove(&tree->dropped_branches, tree->indices_to_delete[i]);
     }
 }
 
@@ -147,7 +155,8 @@ void RenderTree(s_tree* tree){
         float ratio = dropped_branch.branch_copy.length / tree->base_length;
         Vector2 start = Vector2Add(dropped_branch.branch_copy.start, dropped_branch.offset);
         Vector2 end = Vector2Add(dropped_branch.branch_copy.end, dropped_branch.offset);
-        DrawLineEx(start, end, tree->base_thickness*ratio, dropped_branch.color);
+        //DrawLineEx(start, end, tree->base_thickness*ratio, dropped_branch.color);
+        DrawCircleV(end, 30, dropped_branch.color);
     }
 }
 
@@ -172,11 +181,11 @@ void RecursiveTreeDraw(int length, int start_length, float angle){
         rlRotatef(-angle, 0, 0, 1);
         RecursiveTreeDraw(length * branch_decay, start_length, angle);
         rlPopMatrix();
-    }
-}
+    }               
+}   
 
 void DropBranchAndIncreaseHealth(s_tree* tree) {
-    tree->health += 1000;
+    tree->health += 0.25;
     s_dropped_branch* dropped_branch = vector_add_asg(&tree->dropped_branches);
     // Find a branch that is done == true
     dropped_branch->branch_copy = tree->branches[vector_size(tree->branches)-1];

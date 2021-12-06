@@ -37,6 +37,7 @@ typedef struct s_tree {
     float base_thickness;
     float base_length;
     float health; // number between 0 and 1
+    int indices_to_delete[100];  // utility to save indices we want to delete from vector
 } s_tree;
 
 // Takes in a branch, spits out a new one going out from given branch, is recursive

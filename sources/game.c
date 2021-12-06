@@ -42,9 +42,9 @@ void RunGame(s_game* game) {
     game->time_location = glGetUniformLocation(game->background_shader.id, "time");
 
     // Create the ground object
-    game->ground.width = 3000;
+    game->ground.width = game->window_size.x*0.8;
     game->ground.height = game->window_size.y * 0.1f;
-    game->ground.x = -game->ground.width/2;
+    game->ground.x = 0;
     game->ground.y = game->window_size.y-game->ground.height;
 
     // Setup camera
@@ -55,13 +55,18 @@ void RunGame(s_game* game) {
 
     // Generate grass
     game->grass.density = 15;
-    game->grass.origin = (Vector2){game->window_size.x/2, game->window_size.y-game->ground.height};
-    game->grass.horizontal_span = game->window_size.x/2;
+    game->grass.origin = (Vector2){0, game->window_size.y-game->ground.height};
+    game->grass.horizontal_span = game->window_size.x*0.8;
     game->grass.height = 10;
     game->grass.height_variation = 2.5;
     game->grass.triangle_span = 4;
     game->grass.blow_frequency = 1;
     PopulateGrassField(&game->grass);
+
+    // Create the pond
+    game->pond.origin = (Vector2){game->window_size.x*0.8, game->window_size.y-game->ground.height};
+    game->pond.width = game->window_size.x*0.2;
+    CreatePond(&game->pond);
 
     // Create player
     float player_height = 80;
@@ -78,7 +83,6 @@ void RunGame(s_game* game) {
     PlayMusicStream(game->bg_music);
 
     while(!WindowShouldClose()){
-
         // Update input related stuff
         InputGame(game); 
 
@@ -106,6 +110,7 @@ void RunGame(s_game* game) {
     UnloadShader(game->pp_shader);
     UnloadShader(game->background_shader);
     DestructTree(&game->tree);
+    UnloadPond(&game->pond);
 
     CloseAudioDevice();
     CloseWindow();
@@ -175,6 +180,10 @@ void RunPlaying(s_game* game){
     float time = (float)GetTime();
     glUseProgram(game->background_shader.id);
     glUniform1f(game->time_location, time);
+
+    glUseProgram(game->pond.shader.id);
+    glUniform1f(game->pond.time_location, time);
+
     glUseProgram(0);
 
     BeginTextureMode(game->framebuffer_texture); // Enable so we draw to the framebuffer texture!
@@ -186,6 +195,9 @@ void RunPlaying(s_game* game){
         BeginShaderMode(game->background_shader);
             DrawTexture(game->background_texture, 0, 0, WHITE);
         EndShaderMode();
+
+        // Render pond
+        RenderPond(&game->pond);
 
         /* Draws the basis vectors from 0, 0 on x,y axis */
         //DrawCoordinateAxis();

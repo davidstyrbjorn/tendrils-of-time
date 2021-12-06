@@ -7,6 +7,7 @@
 #include"constants.h"
 #include"player.h"
 #include"grass.h"
+#include"pond.h"
 
 typedef enum GAME_STATE {
     MENU,
@@ -22,6 +23,7 @@ typedef struct s_game {
     Rectangle ground;
     Texture background_texture;
     int time_location;
+    s_pond pond;
     // Some game config data
     const char* title;
     Vector2 window_size;
