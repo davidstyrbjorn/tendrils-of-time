@@ -5,14 +5,15 @@
 #include"raymath.h"
 
 #include"utility.h"
+#include"vec.h"
 
 #include<stdio.h>
 #include<stdlib.h>
 #include<math.h>
 
-#include"raymath.h"
-
 #define MAX_RECURSION 4
+
+#define DECAY_FACTOR .1f
 
 Vector2 rotate_point(float cx, float cy, float angle, Vector2 p){
     return (Vector2){cos(angle) * (p.x - cx) - sin(angle) * (p.y - cy) + cx,
@@ -55,6 +56,9 @@ void CreateTree(s_tree* tree, Vector2 origin) {
     tree->branch_count = 1;
     tree->iteration_levels = 8;
     tree->leaf_count = 0;
+    tree->health = 1;
+
+    tree->dropped_branches = vector_create();
 
     // Setup first branch
     tree->branches[0].done = false;
@@ -90,6 +94,20 @@ void CreateTree(s_tree* tree, Vector2 origin) {
     }
 }
 
+void UpdateTree(s_tree* tree){
+    tree->health -= DECAY_FACTOR * GetFrameTime(); // Decrease tree health
+
+    if(tree->health < 0){
+        // Tree is dying! Drop a branch and increase hp some
+        DropBranchAndIncreaseHealth(tree);
+        printf("%i\n", vector_size(tree->dropped_branches));
+    }
+    if(tree->health > 1.1f){
+        // Tree is very healthy! Grow the tree and decreate health
+        GrowTree(tree);
+    }
+}
+
 void RenderTree(s_tree* tree){
     // Branches
     for(int i = 0; i < tree->branch_count; i++){
@@ -106,10 +124,15 @@ void RenderTree(s_tree* tree){
         // Render the leaf
         Vector2 wind = {0};
         s_branch* b = leaf->attached_branch;
-        float temp = b->dynamics.wind_offset + b->dynamics.wind_frequency*GetTime();
-        wind.x = cos(temp) * b->dynamics.wind_amplitude;
+        // float temp = b->dynamics.wind_offset + b->dynamics.wind_frequency*GetTime();
+        // wind.x = cos(temp) * b->dynamics.wind_amplitude;
         Color color = leaf->hp < 3 ? YELLOW : GREEN;
         DrawCircle(b->end.x + wind.x, b->end.y + wind.y, 20, ColorAlpha(color, 0.8f));
+    }
+    // Dropped branches
+    for(int i = 0; i < vector_size(tree->dropped_branches); i++){
+        s_dropped_branch dropped_branch = tree->dropped_branches[i];
+        DrawCircleV(dropped_branch.branch_copy.end, 60, RED);
     }
 }
 
@@ -151,4 +174,22 @@ s_leaf* GetLeaf(s_tree* tree) {
     }
 
     return last_found_alive;
+}
+
+void DropBranchAndIncreaseHealth(s_tree* tree) {
+    tree->health += 0.5f;
+    s_dropped_branch* dropped_branch = vector_add_asg(&tree->dropped_branches);
+    dropped_branch->branch_copy = tree->branches[tree->branch_count-1];
+    dropped_branch = NULL; // Stop using, the element is initalized
+
+    tree->branch_count--;
+}
+
+void GrowTree(s_tree* tree) {
+
+}
+
+void DestructTree(s_tree* tree){
+    vector_erase(tree->dropped_branches, 0, vector_size(tree->dropped_branches)); // Erase all elements
+    free(tree->dropped_branches);
 }

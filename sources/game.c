@@ -58,6 +58,9 @@ void RunGame(s_game* game) {
     game->grass.origin = (Vector2){game->window_size.x/2, game->window_size.y-game->ground.height};
     game->grass.horizontal_span = game->window_size.x/2;
     game->grass.height = 10;
+    game->grass.height_variation = 2.5;
+    game->grass.triangle_span = 4;
+    game->grass.blow_frequency = 1;
     PopulateGrassField(&game->grass);
 
     // Create player
@@ -65,9 +68,9 @@ void RunGame(s_game* game) {
     float player_width = 40;
     game->player.rect = (Rectangle){100, game->window_size.y - game->ground.height - player_height, player_width, player_height};
     game->player.color = (Color){200, 100, 200, 255}; 
-    game->player.horizontal_speed = 10000;
-    game->player.mass = 10;
-    game->player.air_resistance = 50;
+    game->player.horizontal_speed = 12500;
+    game->player.mass = 5;
+    game->player.air_resistance = 75;
 
     // Setup other
     game->second_counter = 0;
@@ -102,6 +105,7 @@ void RunGame(s_game* game) {
     UnloadMusicStream(game->bg_music);
     UnloadShader(game->pp_shader);
     UnloadShader(game->background_shader);
+    DestructTree(&game->tree);
 
     CloseAudioDevice();
     CloseWindow();
@@ -165,13 +169,13 @@ void RunPlaying(s_game* game){
     // }
 
     UpdatePlayer(&game->player, game);
+    UpdateTree(&game->tree);
 
     // Update time for background shader
     float time = (float)GetTime();
     glUseProgram(game->background_shader.id);
     glUniform1f(game->time_location, time);
     glUseProgram(0);
-    //SetShaderValue(game->background_shader, game->time_location, (const void*)1, SHADER_UNIFORM_FLOAT);
 
     BeginTextureMode(game->framebuffer_texture); // Enable so we draw to the framebuffer texture!
     BeginMode2D(game->camera);
@@ -187,11 +191,10 @@ void RunPlaying(s_game* game){
         //DrawCoordinateAxis();
 
         // Render ground
-        //DrawRectanglePro(game->ground, (Vector2){0.0, 0.0}, 0, BROWN);
-        // DrawRectangleGradientV(
-        //     game->ground.x, game->ground.y, game->ground.width, game->ground.height,
-        //     GREEN, BROWN
-        // );
+        DrawRectangleGradientV(
+            game->ground.x, game->ground.y, game->ground.width, game->ground.height,
+            GREEN, BROWN
+        );
 
         // Renders the tree object
         RenderTree(&game->tree);

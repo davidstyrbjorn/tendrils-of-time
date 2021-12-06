@@ -12,6 +12,7 @@
 typedef struct s_straw {
     Vector2 position;
     float height;
+    float trig_offset;
 } s_straw;
 
 typedef struct s_grass {
@@ -20,6 +21,8 @@ typedef struct s_grass {
     float height;
     float height_variation; // In % of height
     float density;
+    float blow_frequency;
+    float triangle_span;
     
     int straw_count;
     s_straw straws[MAX_STRAW_COUNT];

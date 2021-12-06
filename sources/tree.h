@@ -21,6 +21,10 @@ typedef struct s_branch {
     s_dynamic_branch dynamics;
 } s_branch;
 
+typedef struct s_dropped_branch {
+    s_branch branch_copy;
+} s_dropped_branch;
+
 typedef struct s_leaf {
     Vector2 position;
     int hp;
@@ -30,11 +34,13 @@ typedef struct s_leaf {
 typedef struct s_tree {
     s_branch branches[MAX_BRANCHES];
     s_leaf leaves[MAX_LEAVES];
+    s_dropped_branch* dropped_branches;
     int iteration_levels;
     int branch_count;
     int leaf_count;
     float base_thickness;
     float base_length;
+    float health; // number between 0 and 1
 } s_tree;
 
 // Takes in a branch, spits out a new one going out from given branch, is recursive
@@ -45,7 +51,12 @@ s_branch SpawnBranch(s_branch* from, int direction);
 void RecursiveTreeDraw(int length, int start_length, float angle);
 
 void CreateTree(s_tree* tree, Vector2 origin);
+void UpdateTree(s_tree* tree);
 void RenderTree(s_tree* tree);
 s_leaf* GetLeaf(s_tree* tree);
+void DestructTree(s_tree* tree);
+
+void DropBranchAndIncreaseHealth(s_tree* tree);
+void GrowTree(s_tree* tree);
 
 #endif 
