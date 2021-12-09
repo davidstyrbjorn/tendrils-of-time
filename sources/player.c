@@ -23,9 +23,16 @@ void UpdatePlayer(s_player* player, s_game* game){
         force.x += -player->horizontal_speed;
     }
     // The player can grab water if we're at pond + we don't already have any water
-    else if(IsKeyPressed(KEY_SPACE) && player->can_grab_water && !player->has_water){
-        PlaySound(player->slurp_sound);
-        player->has_water = true;
+    else if(IsKeyPressed(KEY_SPACE)){
+            player->has_water = false;
+            // Give water to the tree!
+            PlaySound(player->slurp_sound);
+            GrowTree(&game->tree);
+        if(player->position_state == POND && !player->has_water){
+            PlaySound(player->slurp_sound);
+            player->has_water = true;
+        }else if(player->position_state == TREE && player->has_water){
+        }
     }
 
     // Air resistance proportional to player velocity
@@ -46,18 +53,31 @@ void UpdatePlayer(s_player* player, s_game* game){
     // Can't move passed water, are we close to water? Then we can grab it
     if(position.x + player->texture.width > game->pond.origin.x){
         position.x = game->pond.origin.x - player->texture.width;
-    }else if(position.x + player->texture.width > game->pond.origin.x - 50){
-        player->can_grab_water = true;
-    }else{
-        player->can_grab_water = false;
     }
 
     player->position.x = position.x; player->position.y = position.y;
 
     // Update water level
+    const float update_water_speed = 1.5f;
     if(player->has_water && player->water_level < 1.0f){
-        player->water_level = LinearInterpolate(player->water_level, 1.0f, 1.0f*dt);
+        player->water_level = LinearInterpolate(player->water_level, 1.0f, update_water_speed*dt);
+    }else if(!player->has_water && player->water_level > 0.0f){
+        player->water_level = LinearInterpolate(player->water_level, 0.0f, update_water_speed*dt);
     }
+
+
+    /*  */
+    // Are we at the tree root? (which is at middle of scren)
+    float mid_x = (game->window_size.x / 2) - player->texture.width/2;
+    if(fabsf(player->position.x - mid_x) < 10){
+        player->position_state = TREE;
+    }
+    else if(position.x + player->texture.width > game->pond.origin.x - 50){
+        player->position_state = POND;
+    }else {
+        player->position_state = NONE;
+    }
+
 }
 
 void RenderPlayer(s_player* player){
@@ -67,7 +87,10 @@ void RenderPlayer(s_player* player){
     EndShaderMode();
 
     // UI related
-    if(player->can_grab_water && !player->has_water){
-        DrawText("Press SPACE to grab water", 0, 0, 32, WHITE);
+    if(player->position_state == POND && !player->has_water){
+        DrawText("Press SPACE to absorb water", 0, 0, 32, WHITE);
+    }
+    else if(player->position_state == TREE && player->has_water){
+        DrawText("Press SPACE to give water to tree", 0, 0, 32, WHITE);
     }
 }

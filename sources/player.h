@@ -5,6 +5,12 @@
 
 typedef struct s_game s_game;
 
+typedef enum PLAYER_POSITION_STATES {
+    TREE,
+    POND,
+    NONE
+} PLAYER_POSITION_STATES;
+
 typedef struct s_player {
     Vector2 position;
     Vector2 velocity;
@@ -13,10 +19,10 @@ typedef struct s_player {
     Texture texture;
     Sound slurp_sound;
     int water_level_loc;
-    bool can_grab_water;
     bool has_water;
     int time_location;
     float water_level;
+    PLAYER_POSITION_STATES position_state;
     // Physics
     float mass;
     float air_resistance;

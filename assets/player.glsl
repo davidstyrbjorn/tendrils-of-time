@@ -17,8 +17,9 @@ void main(){
     float b = step(st.y, 0.025);
 
     if(r + l + t + b == 0){
-        float a = step(1 - fragTexCoord.y, water_level);
-        outColor = vec4(0.72, 0.95, 0.9, a);
+        //float a = step(1 - fragTexCoord.y, water_level);
+        float a = smoothstep(0, 1, water_level);
+        outColor = vec4(0.72, 0.95, 1.0, a);
     }
     else {
         outColor = vec4(0.6, 0.8, 0, 1);

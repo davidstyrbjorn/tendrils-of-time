@@ -46,6 +46,8 @@ s_branch SpawnBranch(s_branch* from, int direction){
     new_branch.length = length;
     new_branch.done = false;
     new_branch.dynamics = dynamic_branch;
+    new_branch.child_a = NULL;
+    new_branch.child_b = NULL;
 
     return new_branch;
 }
@@ -54,7 +56,7 @@ void CreateTree(s_tree* tree, Vector2 origin) {
     tree->base_length = 100.0f;
     tree->base_thickness = 15.0f;
     tree->branch_count = 1;
-    tree->iteration_levels = 8;
+    tree->iteration_levels = 2;
     tree->leaf_count = 0;
     tree->health = 1;
 
@@ -80,9 +82,11 @@ void CreateTree(s_tree* tree, Vector2 origin) {
                 // Spawn 2 branches and insert to the end of branch list
                 s_branch* b1 = vector_add_asg(&tree->branches);
                 *b1 = SpawnBranch(&tree->branches[j], 1);
+                tree->branches[j].child_a = b1;
                 b1 = NULL;
                 s_branch* b2 = vector_add_asg(&tree->branches);
                 *b2 = SpawnBranch(&tree->branches[j], -1);
+                tree->branches[j].child_b = b2;
                 b2 = NULL;
             }
         }
@@ -144,20 +148,23 @@ void RenderTree(s_tree* tree){
         s_branch* b = &tree->branches[i];
         float ratio = b->length / tree->base_length;
         DrawLineEx(b->start, b->end, tree->base_thickness*ratio, BROWN);
+        // if(!b->done){
+        //      DrawCircle(b->end.x, b->end.y, 20, ColorAlpha(GREEN, 0.8f));
+        // }
+    }
 
-        if(!b->done){
-             DrawCircle(b->end.x, b->end.y, 20, ColorAlpha(GREEN, 0.8f));
-        }
-    }
+    char str[10000];
+    sprintf(str, "%d", vector_size(tree->branches));
+    DrawText(&str, 0, 0, 32, WHITE);
     // Dropped branches
-    for(int i = 0; i < vector_size(tree->dropped_branches); i++){
-        s_dropped_branch dropped_branch = tree->dropped_branches[i];
-        float ratio = dropped_branch.branch_copy.length / tree->base_length;
-        Vector2 start = Vector2Add(dropped_branch.branch_copy.start, dropped_branch.offset);
-        Vector2 end = Vector2Add(dropped_branch.branch_copy.end, dropped_branch.offset);
-        //DrawLineEx(start, end, tree->base_thickness*ratio, dropped_branch.color);
-        DrawCircleV(end, 30, dropped_branch.color);
-    }
+    // for(int i = 0; i < vector_size(tree->dropped_branches); i++){
+    //     s_dropped_branch dropped_branch = tree->dropped_branches[i];
+    //     float ratio = dropped_branch.branch_copy.length / tree->base_length;
+    //     Vector2 start = Vector2Add(dropped_branch.branch_copy.start, dropped_branch.offset);
+    //     Vector2 end = Vector2Add(dropped_branch.branch_copy.end, dropped_branch.offset);
+    //     //DrawLineEx(start, end, tree->base_thickness*ratio, dropped_branch.color);
+    //     DrawCircleV(end, 30, dropped_branch.color);
+    // }
 }
 
 void RecursiveTreeDraw(int length, int start_length, float angle){
@@ -196,8 +203,23 @@ void DropBranchAndIncreaseHealth(s_tree* tree) {
     vector_remove(&tree->branches, vector_size(tree->branches)-1);
 }
 
-void GrowTree(s_tree* tree) {
+void GrowTreeR(s_branch* branch){
+    if(branch == NULL) return;
 
+    Vector2 line = Vector2Subtract(branch->end, branch->start);
+    Vector2 direction = Vector2Normalize(line);
+    line = Vector2Add(line, direction);
+    branch->end = Vector2Add(branch->start, line); // new end
+
+    
+
+    GrowTreeR(branch->child_a);
+    GrowTreeR(branch->child_b);
+}
+
+void GrowTree(s_tree* tree) {
+    s_branch* current = &tree->branches[0];
+    GrowTreeR(current);
 }
 
 // Free memory from tree
@@ -206,4 +228,8 @@ void DestructTree(s_tree* tree){
     vector_erase(tree->dropped_branches, 0, vector_size(tree->dropped_branches)); // Erase all elements
     free(tree->branches);
     free(tree->dropped_branches);
+}
+
+bool IsBranchLeaf(s_branch* branch){
+    return (branch->child_a == NULL && branch->child_b == NULL);
 }

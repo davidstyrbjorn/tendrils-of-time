@@ -19,6 +19,8 @@ typedef struct s_branch {
     Vector2 end;
     float length;
     s_dynamic_branch dynamics;
+    struct s_branch* child_a;
+    struct s_branch* child_b;
 } s_branch;
 
 typedef struct s_dropped_branch {
@@ -54,5 +56,7 @@ void DestructTree(s_tree* tree);
 
 void DropBranchAndIncreaseHealth(s_tree* tree);
 void GrowTree(s_tree* tree);
+
+bool IsBranchLeaf(s_branch* branch);
 
 #endif 
