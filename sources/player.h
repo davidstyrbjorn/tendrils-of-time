@@ -6,16 +6,20 @@
 typedef struct s_game s_game;
 
 typedef struct s_player {
-    Rectangle rect;
+    Vector2 position;
     Vector2 velocity;
     float horizontal_speed;
-    Color color;
+    Shader shader; // custom shader for player
+    Texture texture;
+    Sound slurp_sound;
+    int water_level_loc;
+    bool can_grab_water;
+    bool has_water;
+    int time_location;
+    float water_level;
     // Physics
     float mass;
     float air_resistance;
-    bool can_grab_water;
-    bool has_water;
-    Sound slurp_sound;
 } s_player;
 
 void UpdatePlayer(s_player* player, struct s_game* game);

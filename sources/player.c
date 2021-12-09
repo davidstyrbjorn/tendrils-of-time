@@ -1,10 +1,12 @@
 #include"player.h"
 
 #include"raymath.h"
+#include"external/glad.h"
 
 #include<stdio.h>
 
 #include"game.h"
+#include"utility.h"
 
 #define GRAVITY -2000
 
@@ -20,9 +22,9 @@ void UpdatePlayer(s_player* player, s_game* game){
     else if(IsKeyDown(KEY_A)){
         force.x += -player->horizontal_speed;
     }
+    // The player can grab water if we're at pond + we don't already have any water
     else if(IsKeyPressed(KEY_SPACE) && player->can_grab_water && !player->has_water){
         PlaySound(player->slurp_sound);
-        printf("SON OF A BITCH");
         player->has_water = true;
     }
 
@@ -33,7 +35,7 @@ void UpdatePlayer(s_player* player, s_game* game){
     Vector2 final_force = force;
     final_force = Vector2Add(final_force, f_air);
 
-    Vector2 position = (Vector2){player->rect.x, player->rect.y};
+    Vector2 position = player->position;
     
     // Euler 
     position = Vector2Add(position, Vector2Scale(player->velocity, dt));
@@ -42,19 +44,27 @@ void UpdatePlayer(s_player* player, s_game* game){
     player->velocity = Vector2Add(player->velocity, temp);
 
     // Can't move passed water, are we close to water? Then we can grab it
-    if(position.x + player->rect.width > game->pond.origin.x){
-        position.x = game->pond.origin.x - player->rect.width;
-    }else if(position.x + player->rect.width > game->pond.origin.x - 50){
+    if(position.x + player->texture.width > game->pond.origin.x){
+        position.x = game->pond.origin.x - player->texture.width;
+    }else if(position.x + player->texture.width > game->pond.origin.x - 50){
         player->can_grab_water = true;
     }else{
         player->can_grab_water = false;
     }
 
-    player->rect.x = position.x; player->rect.y = position.y;
+    player->position.x = position.x; player->position.y = position.y;
+
+    // Update water level
+    if(player->has_water && player->water_level < 1.0f){
+        player->water_level = LinearInterpolate(player->water_level, 1.0f, 1.0f*dt);
+    }
 }
 
 void RenderPlayer(s_player* player){
-    DrawRectanglePro(player->rect, (Vector2){0,0}, 0, player->color);
+    // Render player with custom shader
+    BeginShaderMode(player->shader);
+        DrawTexture(player->texture, player->position.x, player->position.y, WHITE);
+    EndShaderMode();
 
     // UI related
     if(player->can_grab_water && !player->has_water){

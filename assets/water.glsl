@@ -192,7 +192,7 @@ void main(void)
   float alpha = time*3;      
   vec2 g, gsum;
   float n = 0.5;
-  
+                
   float warpamount = clamp(1.1-st.t*1.2, 0.0, 1.0);
   n += 0.4 * psrdnoise(v, p, alpha, g);
   gsum = g;

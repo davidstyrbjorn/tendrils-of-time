@@ -73,11 +73,17 @@ void RunGame(s_game* game) {
     float player_width = 40;
     game->player.slurp_sound = LoadSound(ASSETS_PATH"slurp.wav");
     game->player.has_water = false;
-    game->player.rect = (Rectangle){100, game->window_size.y - game->ground.height - player_height, player_width, player_height};
-    game->player.color = (Color){200, 100, 200, 255}; 
+    game->player.position = (Vector2){100, game->window_size.y - game->ground.height - player_height};
     game->player.horizontal_speed = 12500;
     game->player.mass = 5;
     game->player.air_resistance = 75;
+    imBlank = GenImageColor(player_width, player_height, BLANK);
+    game->player.texture = LoadTextureFromImage(imBlank);
+    UnloadImage(imBlank);
+    game->player.shader = LoadShader(0, TextFormat(ASSETS_PATH"player.glsl", 330));
+    game->player.time_location = glGetUniformLocation(game->player.shader.id, "time");
+    game->player.water_level = 0.0f;   
+    game->player.water_level_loc = glGetUniformLocation(game->player.shader.id, "water_level");
 
     // Setup other
     game->second_counter = 0;
@@ -111,9 +117,11 @@ void RunGame(s_game* game) {
     UnloadMusicStream(game->bg_music);
     UnloadShader(game->pp_shader);
     UnloadShader(game->background_shader);
+    UnloadShader(game->player.shader);
     DestructTree(&game->tree);
     UnloadPond(&game->pond);
     UnloadSound(game->player.slurp_sound);
+    UnloadTexture(game->player.texture);
 
     CloseAudioDevice();
     CloseWindow();
@@ -179,13 +187,17 @@ void RunPlaying(s_game* game){
     UpdatePlayer(&game->player, game);
     UpdateTree(&game->tree);
 
-    // Update time for background shader
+    // Update time for shader that wants 
     float time = (float)GetTime();
     glUseProgram(game->background_shader.id);
     glUniform1f(game->time_location, time);
 
     glUseProgram(game->pond.shader.id);
     glUniform1f(game->pond.time_location, time);
+
+    glUseProgram(game->player.shader.id);
+    glUniform1f(game->player.time_location, time);
+    glUniform1f(game->player.water_level_loc, game->player.water_level);
 
     glUseProgram(0);
 
