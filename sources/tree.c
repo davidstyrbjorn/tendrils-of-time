@@ -148,9 +148,9 @@ void RenderTree(s_tree* tree){
         s_branch* b = &tree->branches[i];
         float ratio = b->length / tree->base_length;
         DrawLineEx(b->start, b->end, tree->base_thickness*ratio, BROWN);
-        // if(!b->done){
-        //      DrawCircle(b->end.x, b->end.y, 20, ColorAlpha(GREEN, 0.8f));
-        // }
+        if(!b->done){
+              DrawCircle(b->end.x, b->end.y, 20, ColorAlpha(GREEN, 0.8f));
+        }
     }
 
     char str[10000];
@@ -203,23 +203,56 @@ void DropBranchAndIncreaseHealth(s_tree* tree) {
     vector_remove(&tree->branches, vector_size(tree->branches)-1);
 }
 
-void GrowTreeR(s_branch* branch){
-    if(branch == NULL) return;
-
+void GrowTreeR(s_branch* branch, int depth){
+    if(branch == NULL) return; // Break condition
+    // Calculate new branch length, depth is a number of how far we are in
+    // grow proprtionally to depth^2 so branches further in grow more
     Vector2 line = Vector2Subtract(branch->end, branch->start);
-    Vector2 direction = Vector2Normalize(line);
+    Vector2 direction = Vector2Scale(Vector2Normalize(line), depth*depth);
     line = Vector2Add(line, direction);
     branch->end = Vector2Add(branch->start, line); // new end
-
-    
-
-    GrowTreeR(branch->child_a);
-    GrowTreeR(branch->child_b);
+    // If we have children, tell them about their new start
+    if(branch->child_a != NULL)
+        branch->child_a->start = branch->end;
+    if(branch->child_b != NULL)
+        branch->child_b->start = branch->end;
+    // Since tree is basically a binary-tree data structure, we use recursion iteration
+    GrowTreeR(branch->child_a, depth+1);
+    GrowTreeR(branch->child_b, depth+1);
 }
 
 void GrowTree(s_tree* tree) {
+    // Grow the length
     s_branch* current = &tree->branches[0];
-    GrowTreeR(current);
+    GrowTreeR(current, 0);
+
+    //tree->base_thickness *= 1.05f;
+
+    // Add new branches where at leaf nodes
+    int frozen_branch_count = vector_size(tree->branches);
+    for(int i = 0; i < frozen_branch_count; i++){
+        s_branch* branch = &tree->branches[i];
+        if(branch->done) continue; // Is it done skip the rest of the checks
+
+        // Check both children, spawn on random chance
+        if(branch->child_a == NULL && GetRandomFloatValue01() > 0.8f){
+            s_branch* b1 = vector_add_asg(&tree->branches);
+            *b1 = SpawnBranch(&tree->branches[i], 1);
+            tree->branches[i].child_a = b1;
+            b1 = NULL;
+        }
+        if(branch->child_b == NULL && GetRandomFloatValue01() > 0.8f){
+            s_branch* b1 = vector_add_asg(&tree->branches);
+            *b1 = SpawnBranch(&tree->branches[i], -1);
+            tree->branches[i].child_b = b1;
+            b1 = NULL;
+        }
+
+        // If both children exist, this branch can't spawn any more children
+        if(branch->child_a != NULL && branch->child_b != NULL)
+            branch->done = true;
+    }
+
 }
 
 // Free memory from tree
