@@ -34,12 +34,11 @@ typedef struct s_tree {
     s_branch* branches;
     s_dropped_branch* dropped_branches;
     int iteration_levels;
-    int branch_count;
-    int leaf_count;
     float base_thickness;
     float base_length;
     float health; // number between 0 and 1
     int indices_to_delete[100];  // utility to save indices we want to delete from vector
+    float growth_chance; // number between 0 and 1
 } s_tree;
 
 // Takes in a branch, spits out a new one going out from given branch, is recursive
