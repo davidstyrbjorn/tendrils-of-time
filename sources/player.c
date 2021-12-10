@@ -23,7 +23,7 @@ void UpdatePlayer(s_player* player, s_game* game){
         force.x += -player->horizontal_speed;
     }
     // The player can grab water if we're at pond + we don't already have any water
-    else if(IsKeyPressed(KEY_X)){
+    else if(IsKeyPressed(KEY_SPACE)){
             player->has_water = false;
             // Give water to the tree!
             PlaySound(player->slurp_sound);

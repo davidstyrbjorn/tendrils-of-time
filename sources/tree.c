@@ -30,7 +30,7 @@ s_branch SpawnBranch(s_branch* from, int direction){
     };
 
     // Rotate end around start
-    float angle = (30 + GetRandomValue(0, 30)) * DEG2RAD;
+    float angle = (30 + GetRandomValue(0, 40)) * DEG2RAD;
     end = rotate_point(start.x, start.y, angle*direction, end);
 
     // Generate some dynamic data for the branch
@@ -55,7 +55,9 @@ s_branch SpawnBranch(s_branch* from, int direction){
 void CreateTree(s_tree* tree, Vector2 origin) {
     tree->base_length = 100.0f;
     tree->base_thickness = 15.0f;
-    tree->iteration_levels = 4;
+    tree->branch_count = 1;
+    tree->iteration_levels = 2;
+    tree->leaf_count = 0;
     tree->health = 1;
 
     // Create "dynamic" arrays
@@ -78,14 +80,14 @@ void CreateTree(s_tree* tree, Vector2 origin) {
             if(!tree->branches[j].done){
                 tree->branches[j].done = true; // Mark this branch as done
                 // Spawn 2 branches and insert to the end of branch list
-                s_branch* a = vector_add_asg(&tree->branches);
-                *a = SpawnBranch(&tree->branches[j], 1);
-                tree->branches[j].child_a = a;
-                a = NULL;
-                s_branch* b = vector_add_asg(&tree->branches);
-                *b = SpawnBranch(&tree->branches[j], -1);
-                tree->branches[j].child_b = b;
-                b = NULL;
+                s_branch* b1 = vector_add_asg(&tree->branches);
+                *b1 = SpawnBranch(&tree->branches[j], 1);
+                tree->branches[j].child_a = b1;
+                b1 = NULL;
+                s_branch* b2 = vector_add_asg(&tree->branches);
+                *b2 = SpawnBranch(&tree->branches[j], -1);
+                tree->branches[j].child_b = b2;
+                b2 = NULL;
             }
         }
     }
@@ -104,7 +106,7 @@ void CreateTree(s_tree* tree, Vector2 origin) {
 
 void UpdateTree(s_tree* tree){
     float dt = GetFrameTime();
-    tree->health += DECAY_FACTOR*4 * dt; // Decrease tree health
+    tree->health -= DECAY_FACTOR*4 * dt; // Decrease tree health
 
     if(tree->health < 0){
         // Tree is dying! Drop a branch and increase hp some
@@ -146,9 +148,9 @@ void RenderTree(s_tree* tree){
         s_branch* b = &tree->branches[i];
         float ratio = b->length / tree->base_length;
         DrawLineEx(b->start, b->end, tree->base_thickness*ratio, BROWN);
-        if(!b->done){
-              DrawCircle(b->end.x, b->end.y, 20, ColorAlpha(GREEN, 0.8f));
-        }
+        // if(!b->done){
+        //      DrawCircle(b->end.x, b->end.y, 20, ColorAlpha(GREEN, 0.8f));
+        // }
     }
 
     char str[10000];
