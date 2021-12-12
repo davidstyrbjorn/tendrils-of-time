@@ -147,9 +147,9 @@ void RenderTree(s_tree* tree){
         // Branch thickness based on length of the branch, see tree->base_thickness & length
         s_branch* b = &tree->branches[i];
         float ratio = b->length / tree->base_length;
-        DrawLineEx(b->start, b->end, tree->base_thickness*ratio, BROWN);
+        DrawLineEx(b->start, b->end, tree->base_thickness, BROWN);
         if(!b->done){
-              DrawCircle(b->end.x, b->end.y, 20, ColorAlpha(GREEN, 0.8f));
+              //DrawCircle(b->end.x, b->end.y, 20, ColorAlpha(GREEN, 0.8f));
         }
     }
 
@@ -226,8 +226,6 @@ void GrowTree(s_tree* tree) {
     s_branch* current = &tree->branches[0];
     GrowTreeR(current, 0);
 
-    //tree->base_thickness *= 1.05f;
-
     // Add new branches where at leaf nodes
     int frozen_branch_count = vector_size(tree->branches);
     for(int i = 0; i < frozen_branch_count; i++){
@@ -252,7 +250,6 @@ void GrowTree(s_tree* tree) {
         if(branch->child_a != NULL && branch->child_b != NULL)
             branch->done = true;
     }
-
 }
 
 // Free memory from tree
