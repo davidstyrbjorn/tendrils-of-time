@@ -44,7 +44,7 @@ typedef struct s_tree {
     int indices_to_delete[400];  // utility to save indices we want to delete from vector
     Sound hurt_sound;
     e_tree_status status;
-    int water_counter;
+    float water_counter;
     float grow_counter;
 } s_tree;
 
@@ -63,7 +63,6 @@ void DestructTree(s_tree* tree);
 void DropBranch(s_tree* tree);
 void GrowTree(s_tree* tree);
 void WaterTree(s_tree* tree);
-void AttackerReachedTree(s_tree* tree);
 
 bool IsBranchLeaf(s_branch* branch);
 

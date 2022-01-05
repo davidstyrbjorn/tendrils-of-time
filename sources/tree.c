@@ -67,7 +67,8 @@ s_branch SpawnBranch(s_branch* from, int direction){
 void CreateTree(s_tree* tree, Vector2 origin) {
     tree->base_length = 90.0f;
     tree->base_thickness = 15.0f;
-    tree->water_counter = 2;
+    tree->water_counter = 100;
+    tree->status = HEALTHY;
     const int iteration_levels = 2;
 
     // Create "dynamic" arrays
@@ -142,10 +143,15 @@ void UpdateTree(s_tree* tree){
     for(int i = 0; i < delete_count; i++){
         vector_remove(&tree->dropped_branches, tree->indices_to_delete[i]);
     }
+
     // Update status
-    if(tree->water_counter == 0) tree->status = DYING;
-    else if(tree->water_counter == 1 || tree->water_counter == 2) tree->status = THIRSTY;
-    else if(tree->water_counter == 3) tree->status = HEALTHY;
+    tree->water_counter -= 6.0f * dt;
+    if(tree->water_counter <= 0){
+        tree->water_counter = 0;
+    }
+    if(tree->water_counter <= 25) tree->status = DYING;
+    else if(tree->water_counter <= 70) tree->status = THIRSTY;
+    else tree->status = HEALTHY;
 
     if(tree->status == HEALTHY){
         tree->grow_counter += 1.0f * dt;
@@ -289,12 +295,6 @@ bool IsBranchLeaf(s_branch* branch){
 
 void WaterTree(s_tree* tree){
     // Increase water counter, clamp to 3
-    tree->water_counter++;
-    if(tree->water_counter > 3) tree->water_counter = 3;
-}
-
-void AttackerReachedTree(s_tree* tree){
-    // Decrease water counter, clamp to 0
-    tree->water_counter--;
-    if(tree->water_counter < 0) tree->water_counter = 0;
+    tree->water_counter+=25;
+    if(tree->water_counter >= 100) tree->water_counter = 100;
 }

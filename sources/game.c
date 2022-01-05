@@ -64,10 +64,11 @@ void RunGame(s_game* game) {
     game->grass.blow_frequency = 1;
     PopulateGrassField(&game->grass);
 
-    // Create the pond
+    // Create the pond & water meter
     game->pond.origin = (Vector2){game->window_size.x*0.8, game->window_size.y-game->ground.height*0.8};    
     game->pond.width = game->window_size.x*0.2;
     CreatePond(&game->pond);
+    CreateWaterMeter(&game->water_meter);
 
     // Create player
     float player_height = 80;
@@ -172,7 +173,7 @@ void GameplayLoop(s_game* game){
             break;
     }
 
-    // Update some uniforms
+    // Update uniform
     float time = (float)GetTime();
     glUseProgram(game->background_shader.id);
     glUniform1f(game->time_location, time);
@@ -181,6 +182,9 @@ void GameplayLoop(s_game* game){
     glUseProgram(game->player.shader.id);
     glUniform1f(game->player.time_location, time);
     glUniform1f(game->player.water_level_loc, game->player.water_level);
+    glUseProgram(game->water_meter.shader.id);
+    glUniform1f(game->water_meter.water_level_location, game->tree.water_counter);
+    glUniform1f(game->water_meter.shader.id, time);
     glUseProgram(0);
 
     BeginTextureMode(game->framebuffer_texture); // Enable so we draw to the framebuffer texture!
@@ -192,9 +196,6 @@ void GameplayLoop(s_game* game){
         BeginShaderMode(game->background_shader);
             DrawTexture(game->background_texture, 0, -600, WHITE);
         EndShaderMode();
-
-        /* Draws the basis vectors from 0, 0 on x,y axis */
-        //DrawCoordinateAxis();
 
         // Render pond
         RenderPond(&game->pond);
@@ -215,6 +216,7 @@ void GameplayLoop(s_game* game){
         for(int i = 0; i < MAX_ATTACKERS; i++){
             RenderAttacker(&game->attackers[i]);
         }
+        RenderWaterMeter(game, &game->water_meter);
         
     EndMode2D();
     EndTextureMode(); // End framebuffer texture
@@ -227,6 +229,9 @@ void GameplayLoop(s_game* game){
             // Flip the y due to how the default opengl coordinates work (left-bottom)
             DrawTextureRec(game->framebuffer_texture.texture, (Rectangle){0, 0, (float)+game->framebuffer_texture.texture.width, (float)-game->framebuffer_texture.texture.height}, (Vector2){0.0, 0.0}, WHITE);
         EndShaderMode();
+
+        /* Draws the basis vectors from 0, 0 on x,y axis */
+        //DrawCoordinateAxis();
 
         // Game state dependent renders
         if(game->game_state == MENU){

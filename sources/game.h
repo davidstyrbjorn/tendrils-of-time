@@ -8,6 +8,7 @@
 #include"player.h"
 #include"grass.h"
 #include"pond.h"
+#include"water_meter.h"
 
 typedef enum GAME_STATE {
     MENU,
@@ -40,6 +41,8 @@ typedef struct s_game {
     s_attacker attackers[MAX_ATTACKERS];
     int* available_attacker_indices;
     int second_counter;
+    // Tha water meter
+    s_water_meter water_meter;
     // Sound
     Music bg_music;
 } s_game;
