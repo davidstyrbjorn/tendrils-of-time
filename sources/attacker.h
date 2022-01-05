@@ -5,24 +5,23 @@
 
 /*
 Attackers get spawned in outside of the screen and has an assigned 
-leaf to attack, if the attackers position reaches the leaf's position
+player to attack, if the attackers position reaches the leaf's position
 it has succeded in the attack
 */
 
-struct s_leaf; // leaf_to_attack forward declaration
 struct s_tree;
 struct s_game;
 
 typedef struct s_attacker {
     Vector2 position;
+    int idx;
     float speed;
-    struct s_leaf* leaf_to_attack;
+    struct s_player* player;
     bool enabled; 
 } s_attacker;
 
-void UpdateAttacker(struct s_tree* tree, s_attacker* attacker);
-void SpawnAttackers(struct s_game* game, int how_many);
-void SpawnAttacker(struct s_tree* tree, s_attacker* attacker);
+void UpdateAttacker(struct s_game* game, s_attacker* attacker);
+s_attacker SpawnAttacker(struct s_game* game, int idx);
 void RenderAttacker(s_attacker* attacker);
 
 #endif

@@ -38,6 +38,7 @@ typedef struct s_game {
     s_grass grass;
     // Attacker data
     s_attacker attackers[MAX_ATTACKERS];
+    int* available_attacker_indices;
     int second_counter;
     // Sound
     Music bg_music;
@@ -49,9 +50,12 @@ void RunGame(s_game* game);
 void EndGame(s_game* game);
 void InputGame(s_game* game);
 
-void RunMenu(s_game* game);
-void RunPaused(s_game* game);
-void RunPlaying(s_game* game);
+void GameplayLoop(s_game* game);
+void UpdatePlaying(s_game* game);
+void UpdateMenu(s_game* game);
+void UpdatePaused(s_game* game);
+void RenderMenu(s_game* game);
+void RenderPaused(s_game* game);
 
 void SpawnAttackers(s_game* game, int how_many);
 

@@ -24,14 +24,14 @@ void UpdatePlayer(s_player* player, s_game* game){
     }
     // The player can grab water if we're at pond + we don't already have any water
     else if(IsKeyPressed(KEY_SPACE)){
-            player->has_water = false;
-            // Give water to the tree!
-            PlaySound(player->slurp_sound);
-            GrowTree(&game->tree);
         if(player->position_state == POND && !player->has_water){
             PlaySound(player->slurp_sound);
             player->has_water = true;
         }else if(player->position_state == TREE && player->has_water){
+            player->has_water = false;
+            // Give water to the tree!
+            PlaySound(player->slurp_sound);
+            WaterTree(&game->tree);
         }
     }
 
@@ -65,11 +65,10 @@ void UpdatePlayer(s_player* player, s_game* game){
         player->water_level = LinearInterpolate(player->water_level, 0.0f, update_water_speed*dt);
     }
 
-
     /*  */
     // Are we at the tree root? (which is at middle of scren)
     float mid_x = (game->window_size.x / 2) - player->texture.width/2;
-    if(fabsf(player->position.x - mid_x) < 10){
+    if(fabsf(player->position.x - mid_x) < 30){
         player->position_state = TREE;
     }
     else if(position.x + player->texture.width > game->pond.origin.x - 50){

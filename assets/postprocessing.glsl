@@ -23,10 +23,10 @@
 //     fragColor = vec4(col, 1.0);
 // }  
 
-uniform sampler2D texture0; // 0
-uniform float rt_w = 800; // GeeXLab built-in
-uniform float rt_h = 600; // GeeXLab built-in
-uniform float pixel_w = 1; // 15.0
+uniform sampler2D texture0; 
+uniform float rt_w = 800;
+uniform float rt_h = 600; 
+uniform float pixel_w = 1; // 13.0
 uniform float pixel_h = 1; // 10.0
 
 in vec2 fragTexCoord;

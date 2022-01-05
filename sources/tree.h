@@ -5,6 +5,12 @@
 
 #include"constants.h"
 
+typedef enum e_tree_status {
+    HEALTHY,
+    THIRSTY,
+    DYING
+} e_tree_status;
+
 typedef struct s_dynamic_branch {
     // Trigonometric parameters so that every branch has a unique wind animation
     float wind_frequency;
@@ -33,13 +39,13 @@ typedef struct s_dropped_branch {
 typedef struct s_tree {
     s_branch* branches;
     s_dropped_branch* dropped_branches;
-    int iteration_levels;
-    int branch_count;
-    int leaf_count;
     float base_thickness;
     float base_length;
-    float health; // number between 0 and 1
     int indices_to_delete[400];  // utility to save indices we want to delete from vector
+    Sound hurt_sound;
+    e_tree_status status;
+    int water_counter;
+    float grow_counter;
 } s_tree;
 
 // Takes in a branch, spits out a new one going out from given branch, is recursive
@@ -54,8 +60,10 @@ void UpdateTree(s_tree* tree);
 void RenderTree(s_tree* tree);
 void DestructTree(s_tree* tree);
 
-void DropBranchAndIncreaseHealth(s_tree* tree);
+void DropBranch(s_tree* tree);
 void GrowTree(s_tree* tree);
+void WaterTree(s_tree* tree);
+void AttackerReachedTree(s_tree* tree);
 
 bool IsBranchLeaf(s_branch* branch);
 

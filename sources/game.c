@@ -11,9 +11,10 @@
 #include"tree.h"
 #include"attacker.h"
 #include"lsystem.h"
+#include"cvector.h"
 
 void StartGame(s_game* game){
-    game->game_state = PLAYING;
+    game->game_state = MENU;
 
     InitWindow(game->window_size.x, game->window_size.y, game->title);
     InitAudioDevice();
@@ -36,7 +37,7 @@ void RunGame(s_game* game) {
 
     // Create background shader and setup background rectangle
     game->background_shader = LoadShader(0, TextFormat(ASSETS_PATH"background.glsl", 330));
-    Image imBlank = GenImageColor(game->window_size.x, game->window_size.y, BLANK);
+    Image imBlank = GenImageColor(game->window_size.x, game->window_size.y*2, BLANK);
     game->background_texture = LoadTextureFromImage(imBlank);  // Load blank texture to fill on shader
     UnloadImage(imBlank);
     game->time_location = glGetUniformLocation(game->background_shader.id, "time");
@@ -89,28 +90,19 @@ void RunGame(s_game* game) {
     game->second_counter = 0;
     game->bg_music = LoadMusicStream(ASSETS_PATH"tree_game.mp3");
     PlayMusicStream(game->bg_music);
+    // Fill the available attacker indices with all indices
+    game->available_attacker_indices = NULL;
+    for(int i = 0; i < MAX_ATTACKERS; i++) { cvector_push_back(game->available_attacker_indices, i); }
 
     while(!WindowShouldClose()){
         // Update input related stuff
         InputGame(game); 
 
+        // Needs to be called in order for bg music to work
         UpdateMusicStream(game->bg_music); 
         
-        switch(game->game_state){
-            case MENU:
-                RunMenu(game);
-                break;
-            case PLAYING:
-                RunPlaying(game);
-                break;
-            case PAUSED:
-                RunPaused(game);
-                break;
-            default:
-                printf("Invalid game state!!!!");
-                CloseWindow();
-                break;
-        }
+        // Runs main game loop
+        GameplayLoop(game);
     }
 
     //TODO(david): Make sure all memeory is deallocated please and thank you!
@@ -121,6 +113,7 @@ void RunGame(s_game* game) {
     DestructTree(&game->tree);
     UnloadPond(&game->pond);
     UnloadSound(game->player.slurp_sound);
+    UnloadSound(game->tree.hurt_sound);
     UnloadTexture(game->player.texture);
 
     CloseAudioDevice();
@@ -142,6 +135,7 @@ void DrawCoordinateAxis() {
 }
 
 void InputGame(s_game* game) {
+    // Mute background music toggle
     if(IsKeyPressed(KEY_M)){
         if(IsMusicStreamPlaying(game->bg_music)){
             PauseMusicStream(game->bg_music);
@@ -165,40 +159,28 @@ void InputGame(s_game* game) {
 
 /* RUNNERS */
 
-void RunMenu(s_game* game){
+void GameplayLoop(s_game* game){
+    switch(game->game_state){
+        case MENU:
+            UpdateMenu(game);
+            break;
+        case PLAYING:
+            UpdatePlaying(game);
+            break;
+        case PAUSED:
+            UpdatePaused(game);
+            break;
+    }
 
-}
-
-void RunPaused(s_game* game){
-
-}
-
-void RunPlaying(s_game* game){
-    // for(int i = 0; i < MAX_ATTACKERS; i++){
-    //     UpdateAttacker(&game->tree, &game->attackers[i]);
-    // }
-
-    // Spawn attackers
-    // if(GetTime() - game->second_counter >= 3){
-    //     game->second_counter = GetTime();
-    //     SpawnAttackers(game, 2);
-    // }
-
-    UpdatePlayer(&game->player, game);
-    UpdateTree(&game->tree);
-
-    // Update time for shader that wants 
+    // Update some uniforms
     float time = (float)GetTime();
     glUseProgram(game->background_shader.id);
     glUniform1f(game->time_location, time);
-
     glUseProgram(game->pond.shader.id);
     glUniform1f(game->pond.time_location, time);
-
     glUseProgram(game->player.shader.id);
     glUniform1f(game->player.time_location, time);
     glUniform1f(game->player.water_level_loc, game->player.water_level);
-
     glUseProgram(0);
 
     BeginTextureMode(game->framebuffer_texture); // Enable so we draw to the framebuffer texture!
@@ -206,16 +188,16 @@ void RunPlaying(s_game* game){
 
         ClearBackground(SKYBLUE);
 
-        // Render background
+        // Render background with the background shader
         BeginShaderMode(game->background_shader);
-            DrawTexture(game->background_texture, 0, 0, WHITE);
+            DrawTexture(game->background_texture, 0, -600, WHITE);
         EndShaderMode();
-
-        // Render pond
-        RenderPond(&game->pond);
 
         /* Draws the basis vectors from 0, 0 on x,y axis */
         //DrawCoordinateAxis();
+
+        // Render pond
+        RenderPond(&game->pond);
 
         // Render ground
         DrawRectangleGradientV(
@@ -227,10 +209,8 @@ void RunPlaying(s_game* game){
         RenderTree(&game->tree);
         // Render grass
         RenderGrass(&game->grass);
-
         // Render player
         RenderPlayer(&game->player);
-
         // Render attackers
         for(int i = 0; i < MAX_ATTACKERS; i++){
             RenderAttacker(&game->attackers[i]);
@@ -248,5 +228,68 @@ void RunPlaying(s_game* game){
             DrawTextureRec(game->framebuffer_texture.texture, (Rectangle){0, 0, (float)+game->framebuffer_texture.texture.width, (float)-game->framebuffer_texture.texture.height}, (Vector2){0.0, 0.0}, WHITE);
         EndShaderMode();
 
+        // Game state dependent renders
+        if(game->game_state == MENU){
+            RenderMenu(game);
+        }
+        if(game->game_state == PAUSED){
+            RenderPaused(game);
+        }
+
     EndDrawing();
+}
+
+void UpdatePlaying(s_game* game){
+    // Move camera
+    if(game->camera.offset.y > 0){
+        game->camera.offset.y -= 250 * GetFrameTime();
+    }else{
+        game->camera.offset.y = 0;
+    }
+
+    // Take input for pausing
+    if(IsKeyPressed(KEY_P)){
+        game->game_state = PAUSED;
+    }
+
+    // Update attackers
+    for(int i = 0; i < MAX_ATTACKERS; i++){
+        if(!game->attackers[i].enabled) continue;
+        UpdateAttacker(game, &game->attackers[i]);
+    }
+    // Spawn attackers? Every 6 seconds
+    if(GetTime() - game->second_counter >= 6){
+        game->second_counter = GetTime();
+        int _idx = game->available_attacker_indices[0];
+        game->attackers[_idx] = SpawnAttacker(game, _idx);
+        // vector_erase(game->available_attacker_indices, 0, 1);
+        cvector_erase(game->available_attacker_indices, 0);
+    }
+
+    // Update player and tree
+    UpdatePlayer(&game->player, game);
+    UpdateTree(&game->tree);
+}
+
+void UpdateMenu(s_game* game){
+    game->camera.offset.y = 600;
+    if(IsKeyPressed(KEY_SPACE)){
+        game->game_state = PLAYING;
+    }
+}
+
+void RenderMenu(s_game* game){
+    DrawText("TENDRILS OF TIME", (game->window_size.x/5), 100, 48, WHITE);
+    DrawText("PRESS SPACE TO PLAY", (game->window_size.x/6), 175, 48, GREEN);
+}
+
+void UpdatePaused(s_game* game){
+    // Unpause
+    if(IsKeyPressed(KEY_P)){
+        game->game_state = PLAYING;
+    }
+}
+
+void RenderPaused(s_game* game){
+    DrawText("PRESS P TO CONTINUE", (game->window_size.x/6), 175, 48, GREEN);
 }
