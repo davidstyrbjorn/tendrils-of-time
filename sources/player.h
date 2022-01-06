@@ -12,6 +12,7 @@ typedef enum PLAYER_POSITION_STATES {
 } PLAYER_POSITION_STATES;
 
 typedef struct s_player {
+    bool can_jump;
     Vector2 position;
     Vector2 velocity;
     float horizontal_speed;

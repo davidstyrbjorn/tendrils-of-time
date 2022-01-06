@@ -12,8 +12,10 @@
 
 void UpdatePlayer(s_player* player, s_game* game){
     
+    // f = m*a
     Vector2 force = (Vector2){0, 0};
     float dt = GetFrameTime();
+    Vector2 position = player->position;
     
     // Check for input
     if(IsKeyDown(KEY_D)){
@@ -32,17 +34,22 @@ void UpdatePlayer(s_player* player, s_game* game){
             // Give water to the tree!
             PlaySound(player->slurp_sound);
             WaterTree(&game->tree);
+        }else if(player->can_jump){
+            position.y = 0;
         }
     }
 
     // Air resistance proportional to player velocity
     Vector2 f_air = Vector2Scale(player->velocity, -player->air_resistance);
 
+    // Gravity calculation
+    Vector2 f_g = Vector2Scale((Vector2){0, 4000}, player->mass);
+
     // Do final force
     Vector2 final_force = force;
     final_force = Vector2Add(final_force, f_air);
 
-    Vector2 position = player->position;
+
     
     // Euler 
     position = Vector2Add(position, Vector2Scale(player->velocity, dt));
@@ -53,6 +60,9 @@ void UpdatePlayer(s_player* player, s_game* game){
     // Can't move passed water, are we close to water? Then we can grab it
     if(position.x + player->texture.width > game->pond.origin.x){
         position.x = game->pond.origin.x - player->texture.width;
+    }
+    if(position.y + player->texture.height > game->ground.y){
+        position.y = game->ground.y - player->texture.height;
     }
 
     player->position.x = position.x; player->position.y = position.y;

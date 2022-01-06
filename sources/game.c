@@ -79,6 +79,7 @@ void RunGame(s_game* game) {
     game->player.horizontal_speed = 12500;
     game->player.mass = 5;
     game->player.air_resistance = 75;
+    game->player.can_jump = true;
     imBlank = GenImageColor(player_width, player_height, BLANK);
     game->player.texture = LoadTextureFromImage(imBlank);
     UnloadImage(imBlank);
