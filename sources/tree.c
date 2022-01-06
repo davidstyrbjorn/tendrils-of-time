@@ -32,7 +32,7 @@ char* tree_status_to_string(s_tree* tree){
     return "UNKOWN STATUS";
 }
 
-s_branch SpawnBranch(s_branch* from, int direction){
+s_branch* SpawnBranch(s_branch* from, int direction){
     Vector2 start = from->end;
     float x = 0.9f;
     float length = from->length*x;
@@ -52,16 +52,33 @@ s_branch SpawnBranch(s_branch* from, int direction){
     dynamic_branch.wind_offset = GetRandomValue(0, 100);
 
     // Create the object
-    s_branch new_branch;
-    new_branch.start = start;
-    new_branch.end = end;
-    new_branch.length = length;
-    new_branch.done = false;
-    new_branch.dynamics = dynamic_branch;
-    new_branch.child_a = NULL;
-    new_branch.child_b = NULL;
+    s_branch* new_branch = (s_branch*)malloc(sizeof(s_branch));
+    new_branch->start = start;
+    new_branch->end = end;
+    new_branch->length = length;
+    new_branch->done = false;
+    new_branch->dynamics = dynamic_branch;
+    new_branch->child_a = NULL;
+    new_branch->child_b = NULL;
 
     return new_branch;
+}
+
+void RecursiveGenerate(s_branch* branch, int depth){
+    if(depth > 2) return; // Break condition
+
+    if(branch->child_a == NULL){
+        // Generate child a
+        branch->child_a = SpawnBranch(branch, -1);
+    }
+    if(branch->child_b == NULL){
+        // Generate child b
+        branch->child_b = SpawnBranch(branch, 1);
+    }
+
+    // Continue down and increase depth
+    RecursiveGenerate(branch->child_a, depth+1);
+    RecursiveGenerate(branch->child_b, depth+1);
 }
 
 void CreateTree(s_tree* tree, Vector2 origin) {
@@ -69,39 +86,20 @@ void CreateTree(s_tree* tree, Vector2 origin) {
     tree->base_thickness = 15.0f;
     tree->water_counter = 100;
     tree->status = HEALTHY;
-    const int iteration_levels = 2;
 
-    // Create "dynamic" arrays
-    tree->dropped_branches = vector_create();
-    tree->branches = vector_create();
-
-    // Setup first branch
-    s_branch* b = vector_add_asg(&tree->branches);
-    b->done = false;
-    b->start = 
+    // Create root
+    tree->root = (s_branch){0};
+    tree->root.child_a = NULL;
+    tree->root.child_b = NULL;
+    tree->root.done = false;
+    tree->root.start = 
         Vector2Add(origin, (Vector2){GetScreenWidth()/2, GetScreenHeight()});
-    b->length = tree->base_length;
-    b->end = 
+    tree->root.length = tree->base_length;
+    tree->root.end = 
         Vector2Add(origin, (Vector2){GetScreenWidth()/2, GetScreenHeight()-tree->base_length});
-    b = NULL;
 
-    for(int i = 0; i < iteration_levels; i++){
-        int frozen_branch_count = vector_size(tree->branches);
-        for(int j = 0; j < frozen_branch_count; j++){
-            if(!tree->branches[j].done){
-                tree->branches[j].done = true; // Mark this branch as done
-                // Spawn 2 branches and insert to the end of branch list
-                s_branch* b1 = vector_add_asg(&tree->branches);
-                *b1 = SpawnBranch(&tree->branches[j], 1);
-                tree->branches[j].child_a = b1;
-                b1 = NULL;
-                s_branch* b2 = vector_add_asg(&tree->branches);
-                *b2 = SpawnBranch(&tree->branches[j], -1);
-                tree->branches[j].child_b = b2;
-                b2 = NULL;
-            }
-        }
-    }
+    // Generate a bunch of levels
+    RecursiveGenerate(&tree->root, 0);
 
     // Load sound
     tree->hurt_sound = LoadSound(ASSETS_PATH"tree_hurt.wav");
@@ -120,30 +118,6 @@ void CreateTree(s_tree* tree, Vector2 origin) {
 
 void UpdateTree(s_tree* tree){
     float dt = GetFrameTime();
-
-    int delete_count = 0;
-    float time = GetTime();
-    for(int i = 0; i < vector_size(tree->dropped_branches); i++){
-        // Increase branch offset
-        tree->dropped_branches[i].offset = Vector2Add(
-            tree->dropped_branches[i].offset, (Vector2){0.0, 50.0f*dt});
-        s_dropped_branch dropped = tree->dropped_branches[i];
-        // Fade it out
-        float t = tree->dropped_branches[i].spawn_time - time;
-        //float a = LinearInterpolate(0.0f, 1.0f, t);
-        //tree->dropped_branches[i].color = ColorAlpha(BROWN, a);
-        tree->dropped_branches[i].color = BROWN;
-        // If it has reached a clear color, remove it from the dropped branch list
-        if(t <= -3.0f){
-            tree->indices_to_delete[delete_count] = i;
-            delete_count++;
-        }
-    }
-    // Go through and delete dropped branches
-    for(int i = 0; i < delete_count; i++){
-        vector_remove(&tree->dropped_branches, tree->indices_to_delete[i]);
-    }
-
     // Update status
     tree->water_counter -= 6.0f * dt;
     if(tree->water_counter <= 0){
@@ -169,35 +143,27 @@ void UpdateTree(s_tree* tree){
     }
 }
 
+void RenderTreeRecursive(s_branch* branch, s_tree* tree){
+    if(branch == NULL) return; // Break condition
+
+    // Draw line
+    DrawLineEx(branch->start, branch->end, tree->base_thickness, BROWN);
+
+    // Traverse
+    RenderTreeRecursive(branch->child_a, tree);
+    RenderTreeRecursive(branch->child_b, tree);
+}
+
 void RenderTree(s_tree* tree){
-    // Branches
-    for(int i = 0; i < vector_size(tree->branches); i++){
-        // Branch thickness based on length of the branch, see tree->base_thickness & length
-        s_branch* b = &tree->branches[i];
-        float ratio = b->length / tree->base_length;
-        DrawLineEx(b->start, b->end, tree->base_thickness*ratio, BROWN);
-        if(IsBranchLeaf(b)){
-              DrawCircle(b->end.x, b->end.y, 20, ColorAlpha(GREEN, 0.8f));
-        }
-    }
+    // Draw root
+    s_branch* root = &tree->root;
+    DrawLineEx(root->start, root->end, tree->base_thickness, BROWN);
+    RenderTreeRecursive(root, tree);
 
     // Render text
     char status_lit[20] = "Tree Status: ";
     strcat(status_lit, tree_status_to_string(tree));
     DrawText(status_lit, 0, 50, 32, WHITE);
-
-    //char str[10000];
-    //sprintf(str, "%d", vector_size(tree->branches));
-    //DrawText(&str, 0, 0, 32, WHITE);
-    // Dropped branches
-    // for(int i = 0; i < vector_size(tree->dropped_branches); i++){
-    //     s_dropped_branch dropped_branch = tree->dropped_branches[i];
-    //     float ratio = dropped_branch.branch_copy.length / tree->base_length;
-    //     Vector2 start = Vector2Add(dropped_branch.branch_copy.start, dropped_branch.offset);
-    //     Vector2 end = Vector2Add(dropped_branch.branch_copy.end, dropped_branch.offset);
-    //     //DrawLineEx(start, end, tree->base_thickness*ratio, dropped_branch.color);
-    //     DrawCircleV(end, 30, dropped_branch.color);
-    // }
 }
 
 void RecursiveTreeDraw(int length, int start_length, float angle){
@@ -224,16 +190,6 @@ void RecursiveTreeDraw(int length, int start_length, float angle){
     }               
 }   
 
-void DropBranch(s_tree* tree) {
-    // Play sound
-    PlaySound(tree->hurt_sound);
-    s_branch* saved = (&tree->branches[vector_size(tree->branches)-1]);
-    // vector_remove(&tree->branches, vector_size(tree->branches)-1);
-    vector_erase(&tree->branches, vector_size(tree->branches)-1, 1);
-    //free(saved);
-    printf("%.2f\n", saved->start.x);
-}
-
 void GrowTreeR(s_branch* branch, int depth){
     if(branch == NULL) return; // Break condition
     // Calculate new branch length, depth is a number of how far we are in
@@ -253,40 +209,16 @@ void GrowTreeR(s_branch* branch, int depth){
 }
 
 void GrowTree(s_tree* tree) {
-    // Grow the length  
-    s_branch* current = &tree->branches[0];
-    GrowTreeR(current, 0);
+    // GrowTreeR(current, 0);
+}
 
-    // Add new branches where at leaf nodes
-    int frozen_branch_count = vector_size(tree->branches);
-    for(int i = 0; i < frozen_branch_count; i++){
-        s_branch* branch = &tree->branches[i];
-        if(branch->done) continue; // Is it done skip the rest of the checks
-        // Check both children, spawn on random chance
-        if(branch->child_a == NULL && GetRandomFloatValue01() > 0.5f){
-            s_branch* b1 = vector_add_asg(&tree->branches);
-            *b1 = SpawnBranch(&tree->branches[i], 1);
-            tree->branches[i].child_a = b1;                 
-            b1 = NULL;
-        }
-        if(branch->child_b == NULL && GetRandomFloatValue01() > 0.5f){
-            s_branch* b1 = vector_add_asg(&tree->branches);
-            *b1 = SpawnBranch(&tree->branches[i], -1);
-            tree->branches[i].child_b = b1;
-            b1 = NULL;
-        }
-        // If both children exist, this branch can't spawn any more children
-        if(branch->child_a != NULL && branch->child_b != NULL)
-            branch->done = true;
-    }
+void DropBranch(s_tree* tree){
+
 }
 
 // Free memory from tree
 void DestructTree(s_tree* tree){
-    vector_erase(tree->branches, 0, vector_size(tree->branches));
-    vector_erase(tree->dropped_branches, 0, vector_size(tree->dropped_branches)); // Erase all elements
-    free(tree->branches);
-    free(tree->dropped_branches);
+    
 }
 
 bool IsBranchLeaf(s_branch* branch){

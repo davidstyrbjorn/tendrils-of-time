@@ -29,16 +29,8 @@ typedef struct s_branch {
     struct s_branch* child_b;
 } s_branch;
 
-typedef struct s_dropped_branch {
-    s_branch branch_copy;
-    Vector2 offset;
-    Color color;
-    double spawn_time;
-} s_dropped_branch;
-
 typedef struct s_tree {
-    s_branch* branches;
-    s_dropped_branch* dropped_branches;
+    s_branch root; // The root branch
     float base_thickness;
     float base_length;
     int indices_to_delete[400];  // utility to save indices we want to delete from vector
@@ -50,7 +42,7 @@ typedef struct s_tree {
 
 // Takes in a branch, spits out a new one going out from given branch, is recursive
 // Spits out nullptr if the branch is a "leaf"
-s_branch SpawnBranch(s_branch* from, int direction);
+s_branch* SpawnBranch(s_branch* from, int direction);
 
 // Draw using rlgl immediate mode
 void RecursiveTreeDraw(int length, int start_length, float angle);

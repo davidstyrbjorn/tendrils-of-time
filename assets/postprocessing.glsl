@@ -24,25 +24,24 @@
 // }  
 
 uniform sampler2D texture0; 
-uniform float rt_w = 800;
-uniform float rt_h = 600; 
-uniform float pixel_w = 1; // 13.0
-uniform float pixel_h = 1; // 10.0
 
 in vec2 fragTexCoord;
 out vec4 fragColor;
 
+vec3 Gamma(vec3 value, float param)
+{
+    return vec3(
+      pow(abs(value.r), param), 
+      pow(abs(value.g), param), 
+      pow(abs(value.b), param)
+    );
+}
+
 void main() 
 { 
   vec2 uv = fragTexCoord;
-  
-  vec3 tc = vec3(1.0, 0.0, 0.0);
-    float dx = pixel_w*(1./rt_w);
-    float dy = pixel_h*(1./rt_h);
-    vec2 coord = vec2(dx*floor(uv.x/dx),
-                      dy*floor(uv.y/dy));
-
-    tc = texture2D(texture0, coord).rgb;
+  vec3 tc = texture2D(texture0, uv).rgb;
+  tc = Gamma(tc, 1.25);
 
 	fragColor = vec4(tc, 1.0);
 }

@@ -55,6 +55,10 @@ void main(void){
 
     float v = voronoi(fragTexCoord).x;
 
+     vec3 green = vec3(0, 1, 0);
+     vec3 red = vec3(1, 0, 0);
+     vec3 currentColor = mix(red, green, fragTexCoord.x);   
+
     float relativeWaterLevel = 1 - (waterLevel / 100.0); // Water level goes up to 100
-    fragColor = vec4(0, v+0.5, 0, step(relativeWaterLevel, 1-fragTexCoord.x));
+    fragColor = vec4(currentColor.rgb, step(relativeWaterLevel, 1-fragTexCoord.x));
 }

@@ -12,6 +12,7 @@
 #include"attacker.h"
 #include"lsystem.h"
 #include"cvector.h"
+#include"utility.h"
 
 void StartGame(s_game* game){
     game->game_state = MENU;
@@ -90,7 +91,9 @@ void RunGame(s_game* game) {
 
     // Setup other
     game->second_counter = 0;
+    game->camera_shake_timer = 0;
     game->bg_music = LoadMusicStream(ASSETS_PATH"tree_game.mp3");
+    game->enemy_die_sfx = LoadSound(ASSETS_PATH"enemy_dead.wav");
     PlayMusicStream(game->bg_music);
     // Fill the available attacker indices with all indices
     game->available_attacker_indices = NULL;
@@ -162,6 +165,9 @@ void InputGame(s_game* game) {
 /* RUNNERS */
 
 void GameplayLoop(s_game* game){
+    if(game->in_transition){
+        UpdateTransition(game);
+    }
     switch(game->game_state){
         case MENU:
             UpdateMenu(game);
@@ -234,7 +240,7 @@ void GameplayLoop(s_game* game){
         /* Draws the basis vectors from 0, 0 on x,y axis */
         //DrawCoordinateAxis();
 
-        // Game state dependent renders
+        // Game state dependent renders outside of the post processing effect
         if(game->game_state == MENU){
             RenderMenu(game);
         }
@@ -245,14 +251,16 @@ void GameplayLoop(s_game* game){
     EndDrawing();
 }
 
-void UpdatePlaying(s_game* game){
-    // Move camera
+void UpdateTransition(s_game* game){
     if(game->camera.offset.y > 0){
-        game->camera.offset.y -= 250 * GetFrameTime();
+        game->camera.offset.y -= 500 * GetFrameTime();
     }else{
+        game->in_transition = false;
         game->camera.offset.y = 0;
     }
+}
 
+void UpdatePlaying(s_game* game){
     // Take input for pausing
     if(IsKeyPressed(KEY_P)){
         game->game_state = PAUSED;
@@ -271,6 +279,10 @@ void UpdatePlaying(s_game* game){
         // vector_erase(game->available_attacker_indices, 0, 1);
         cvector_erase(game->available_attacker_indices, 0);
     }
+    // Camera?
+    if(game->camera_shake_timer > 0){
+        UpdateCameraShake(game);
+    }
 
     // Update player and tree
     UpdatePlayer(&game->player, game);
@@ -281,6 +293,7 @@ void UpdateMenu(s_game* game){
     game->camera.offset.y = 600;
     if(IsKeyPressed(KEY_SPACE)){
         game->game_state = PLAYING;
+        game->in_transition = true;
     }
 }
 
@@ -298,4 +311,25 @@ void UpdatePaused(s_game* game){
 
 void RenderPaused(s_game* game){
     DrawText("PRESS P TO CONTINUE", (game->window_size.x/6), 175, 48, GREEN);
+}
+
+void StartCameraShake(s_game* game, float how_long, float strength){
+    game->camera_shake_timer = how_long;
+    game->camera_shake_strength = strength;
+    game->camera_saved_offset = game->camera.offset;
+}
+
+void UpdateCameraShake(s_game* game){
+    // Do the shaking
+    Vector2 offset = (Vector2){GetRandomFloatValue01(), GetRandomFloatValue01()};
+    offset = Vector2Scale(offset, game->camera_shake_strength);
+    Vector2 newCameraOffset = Vector2Add(game->camera_saved_offset, offset);
+    game->camera.offset = newCameraOffset; // Updates the actual offset of the camera
+
+    // Decrease timer and reset if we're done
+    game->camera_shake_timer -= 1.0f * GetFrameTime();
+    if(game->camera_shake_timer <= 0){
+        game->camera_shake_timer = 0;
+        game->camera.offset = game->camera_saved_offset;
+    }
 }

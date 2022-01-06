@@ -16,8 +16,8 @@ typedef struct s_attacker {
     Vector2 position;
     int idx;
     float speed;
-    struct s_player* player;
     bool enabled; 
+    float radius;
 } s_attacker;
 
 void UpdateAttacker(struct s_game* game, s_attacker* attacker);

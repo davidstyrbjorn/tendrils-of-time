@@ -40,11 +40,16 @@ typedef struct s_game {
     // Attacker data
     s_attacker attackers[MAX_ATTACKERS];
     int* available_attacker_indices;
+    Sound enemy_die_sfx;
     int second_counter;
     // Tha water meter
     s_water_meter water_meter;
     // Sound
     Music bg_music;
+    bool in_transition;
+    float camera_shake_timer;
+    float camera_shake_strength;
+    Vector2 camera_saved_offset;
 } s_game;
 
 // Declare game related functions
@@ -54,11 +59,14 @@ void EndGame(s_game* game);
 void InputGame(s_game* game);
 
 void GameplayLoop(s_game* game);
+void UpdateTransition(s_game* game);
 void UpdatePlaying(s_game* game);
 void UpdateMenu(s_game* game);
 void UpdatePaused(s_game* game);
 void RenderMenu(s_game* game);
 void RenderPaused(s_game* game);
+void StartCameraShake(s_game* game, float how_long, float strength);
+void UpdateCameraShake(s_game* game);
 
 void SpawnAttackers(s_game* game, int how_many);
 

@@ -13,7 +13,7 @@
 void UpdatePlayer(s_player* player, s_game* game){
     
     // f = m*a
-    Vector2 force = (Vector2){0, 0};
+    Vector2 force = (Vector2){0, 8000};
     float dt = GetFrameTime();
     Vector2 position = player->position;
     

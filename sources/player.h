@@ -8,6 +8,7 @@ typedef struct s_game s_game;
 typedef enum PLAYER_POSITION_STATES {
     TREE,
     POND,
+    TAKEN_BY_ENEMY,
     NONE
 } PLAYER_POSITION_STATES;
 
