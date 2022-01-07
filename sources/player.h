@@ -8,12 +8,11 @@ typedef struct s_game s_game;
 typedef enum PLAYER_POSITION_STATES {
     TREE,
     POND,
-    TAKEN_BY_ENEMY,
+    TAKEN_BY_ATTACKER,
     NONE
 } PLAYER_POSITION_STATES;
 
 typedef struct s_player {
-    bool can_jump;
     Vector2 position;
     Vector2 velocity;
     float horizontal_speed;

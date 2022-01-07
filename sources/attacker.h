@@ -17,6 +17,7 @@ typedef struct s_attacker {
     int idx;
     float speed;
     bool enabled; 
+    bool player_taken;
     float radius;
 } s_attacker;
 

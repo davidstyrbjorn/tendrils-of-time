@@ -17,6 +17,6 @@ void CreateWaterMeter(s_water_meter* water_meter){
 void RenderWaterMeter(s_game* game, s_water_meter* water_meter){
     // Render texture with water level shader
     BeginShaderMode(water_meter->shader);
-        DrawTexture(water_meter->texture, 0, 0, WHITE);
+        DrawTexture(water_meter->texture, 10, 10, WHITE);
     EndShaderMode();
 }

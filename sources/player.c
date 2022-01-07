@@ -11,9 +11,10 @@
 #define GRAVITY -2000
 
 void UpdatePlayer(s_player* player, s_game* game){
-    
+    if(player->position_state == TAKEN_BY_ATTACKER) return;
+
     // f = m*a
-    Vector2 force = (Vector2){0, 8000};
+    Vector2 force = (Vector2){0, 15000};
     float dt = GetFrameTime();
     Vector2 position = player->position;
     
@@ -34,8 +35,6 @@ void UpdatePlayer(s_player* player, s_game* game){
             // Give water to the tree!
             PlaySound(player->slurp_sound);
             WaterTree(&game->tree);
-        }else if(player->can_jump){
-            position.y = 0;
         }
     }
 
@@ -48,8 +47,6 @@ void UpdatePlayer(s_player* player, s_game* game){
     // Do final force
     Vector2 final_force = force;
     final_force = Vector2Add(final_force, f_air);
-
-
     
     // Euler 
     position = Vector2Add(position, Vector2Scale(player->velocity, dt));
@@ -97,9 +94,9 @@ void RenderPlayer(s_player* player){
 
     // UI related
     if(player->position_state == POND && !player->has_water){
-        DrawText("Press SPACE to absorb water", 0, 0, 32, WHITE);
+        DrawText("Press SPACE to absorb water", 10, 120, 32, WHITE);
     }
     else if(player->position_state == TREE && player->has_water){
-        DrawText("Press SPACE to give water to tree", 0, 0, 32, WHITE);
+        DrawText("Press SPACE to give water to tree", 10, 120, 32, WHITE);
     }
 }

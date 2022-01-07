@@ -58,27 +58,31 @@ s_branch* SpawnBranch(s_branch* from, int direction){
     new_branch->length = length;
     new_branch->done = false;
     new_branch->dynamics = dynamic_branch;
+    new_branch->color = BROWN;
     new_branch->child_a = NULL;
     new_branch->child_b = NULL;
+    new_branch->parent = from;
 
     return new_branch;
 }
 
-void RecursiveGenerate(s_branch* branch, int depth){
-    if(depth > 2) return; // Break condition
+void RecursiveGenerate(s_branch* branch, int depth, s_tree* tree){
+    if(depth > 0) return; // Break condition
 
-    if(branch->child_a == NULL){
-        // Generate child a
-        branch->child_a = SpawnBranch(branch, -1);
-    }
     if(branch->child_b == NULL){
         // Generate child b
         branch->child_b = SpawnBranch(branch, 1);
+        tree->latest_added_branch = branch->child_b;
+    }
+    if(branch->child_a == NULL){
+        // Generate child a
+        branch->child_a = SpawnBranch(branch, -1);
+        tree->latest_added_branch = branch->child_b;
     }
 
     // Continue down and increase depth
-    RecursiveGenerate(branch->child_a, depth+1);
-    RecursiveGenerate(branch->child_b, depth+1);
+    RecursiveGenerate(branch->child_a, depth+1, tree);
+    RecursiveGenerate(branch->child_b, depth+1, tree);
 }
 
 void CreateTree(s_tree* tree, Vector2 origin) {
@@ -99,37 +103,27 @@ void CreateTree(s_tree* tree, Vector2 origin) {
         Vector2Add(origin, (Vector2){GetScreenWidth()/2, GetScreenHeight()-tree->base_length});
 
     // Generate a bunch of levels
-    RecursiveGenerate(&tree->root, 0);
+    RecursiveGenerate(&tree->root, 0, tree);
 
     // Load sound
     tree->hurt_sound = LoadSound(ASSETS_PATH"tree_hurt.wav");
-
-    // Do pass and find leaves
-    // for(int i = 0; i < tree->branch_count; i++){
-    //     if(!tree->branches[i].done){
-    //         // Found leaf!
-    //         tree->leaves[tree->leaf_count].position = tree->branches[i].end;
-    //         tree->leaves[tree->leaf_count].hp = 3; 
-    //         tree->leaves[tree->leaf_count].attached_branch = &tree->branches[i];
-    //         tree->leaf_count++;
-    //     }
-    // }
 }
 
 void UpdateTree(s_tree* tree){
     float dt = GetFrameTime();
-    // Update status
+    // Decrement and clamp water counter
     tree->water_counter -= 6.0f * dt;
     if(tree->water_counter <= 0){
         tree->water_counter = 0;
     }
+    // Update status
     if(tree->water_counter <= 25) tree->status = DYING;
     else if(tree->water_counter <= 70) tree->status = THIRSTY;
     else tree->status = HEALTHY;
-
+    // Update depending on current tree status
     if(tree->status == HEALTHY){
         tree->grow_counter += 1.0f * dt;
-        if(tree->grow_counter >= 5){
+        if(tree->grow_counter >= 8){
             GrowTree(tree);
             tree->grow_counter = 0;
         }
@@ -143,27 +137,33 @@ void UpdateTree(s_tree* tree){
     }
 }
 
-void RenderTreeRecursive(s_branch* branch, s_tree* tree){
+void RenderTreeRecursive(s_branch* branch, int depth, s_tree* tree){
     if(branch == NULL) return; // Break condition
 
     // Draw line
-    DrawLineEx(branch->start, branch->end, tree->base_thickness, BROWN);
+    float ratio = 1 - (depth / 10.0f);
+    DrawLineEx(branch->start, branch->end, tree->base_thickness*ratio, branch->color);
+
+    // Draw leaf
+    if(branch->child_a == NULL && branch->child_b == NULL){
+        DrawCircle(branch->end.x, branch->end.y, 20, ColorAlpha(GREEN, 0.5f));
+    }
 
     // Traverse
-    RenderTreeRecursive(branch->child_a, tree);
-    RenderTreeRecursive(branch->child_b, tree);
+    RenderTreeRecursive(branch->child_a, depth+1, tree);
+    RenderTreeRecursive(branch->child_b, depth+1, tree);
 }
 
 void RenderTree(s_tree* tree){
     // Draw root
     s_branch* root = &tree->root;
     DrawLineEx(root->start, root->end, tree->base_thickness, BROWN);
-    RenderTreeRecursive(root, tree);
+    RenderTreeRecursive(root, 1, tree);
 
     // Render text
     char status_lit[20] = "Tree Status: ";
     strcat(status_lit, tree_status_to_string(tree));
-    DrawText(status_lit, 0, 50, 32, WHITE);
+    DrawText(status_lit, 10, 60, 32, WHITE);
 }
 
 void RecursiveTreeDraw(int length, int start_length, float angle){
@@ -192,33 +192,66 @@ void RecursiveTreeDraw(int length, int start_length, float angle){
 
 void GrowTreeR(s_branch* branch, int depth){
     if(branch == NULL) return; // Break condition
-    // Calculate new branch length, depth is a number of how far we are in
-    // grow proprtionally to depth^2 so branches further in grow more
-    Vector2 line = Vector2Subtract(branch->end, branch->start);
-    Vector2 direction = Vector2Scale(Vector2Normalize(line), depth*depth);
-    line = Vector2Add(line, direction);
-    branch->end = Vector2Add(branch->start, line); // new end
-    // If we have children, tell them about their new start
-    if(branch->child_a != NULL)
-        branch->child_a->start = branch->end;
-    if(branch->child_b != NULL)
-        branch->child_b->start = branch->end;
-    // Since tree is basically a binary-tree data structure, we use recursion iteration
+    
+    // Add branches if non exists on this branch already
+    if(branch->child_a == NULL && GetRandomFloatValue01() > 0.5f){
+        branch->child_a = SpawnBranch(branch, -1);
+        return;
+    }
+    if(branch->child_b == NULL && GetRandomFloatValue01() > 0.5f){
+        branch->child_b = SpawnBranch(branch, 1);
+        return;
+    }
+    
     GrowTreeR(branch->child_a, depth+1);
     GrowTreeR(branch->child_b, depth+1);
 }
 
 void GrowTree(s_tree* tree) {
-    // GrowTreeR(current, 0);
+    GrowTreeR(&tree->root, 0);
+}
+
+void FindDeepestBranch(s_branch* curr, int level, int* deepest_level, s_branch** res){
+    if(curr != NULL){
+        FindDeepestBranch(curr->child_a, ++level, deepest_level, res);
+        if(level > *deepest_level){
+            *deepest_level = level;
+            *res = curr;
+        }
+        FindDeepestBranch(curr->child_b, level, deepest_level, res);
+    }
 }
 
 void DropBranch(s_tree* tree){
+    if(tree->root.child_a == NULL && tree->root.child_b == NULL) return; // Chill if this is the case
+    s_branch* deepest_branch = NULL;
+    int deepest_level = -1;
+    FindDeepestBranch(&tree->root, 0, &deepest_level, &deepest_branch);
 
+    // Invalidate pointer adresses
+    if(deepest_branch->parent->child_a == deepest_branch){
+        deepest_branch->parent->child_a = NULL;
+    }else{
+        deepest_branch->parent->child_b = NULL;
+    }
+    free(deepest_branch); deepest_branch = NULL;
+}
+
+void RecursivelyFreeTree(s_branch* branch){
+    if(branch == NULL) return;
+
+    s_branch* a = branch->child_a;
+    s_branch* b = branch->child_b;
+    free(branch);
+
+    RecursivelyFreeTree(branch->child_a);
+    RecursivelyFreeTree(branch->child_b);
 }
 
 // Free memory from tree
 void DestructTree(s_tree* tree){
-    
+    UnloadSound(tree->hurt_sound);
+    RecursivelyFreeTree(&tree->root);
 }
 
 bool IsBranchLeaf(s_branch* branch){

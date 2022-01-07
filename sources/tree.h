@@ -24,13 +24,16 @@ typedef struct s_branch {
     Vector2 start;
     Vector2 end;
     float length;
+    Color color;
     s_dynamic_branch dynamics;
     struct s_branch* child_a;
     struct s_branch* child_b;
+    struct s_branch* parent;
 } s_branch;
 
 typedef struct s_tree {
     s_branch root; // The root branch
+    s_branch* latest_added_branch;
     float base_thickness;
     float base_length;
     int indices_to_delete[400];  // utility to save indices we want to delete from vector

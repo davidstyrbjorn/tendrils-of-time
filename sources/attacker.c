@@ -25,20 +25,35 @@ void UpdateAttacker(s_game* game, s_attacker* attacker){
         if(Vector2Distance(mousePosition, attacker->position) < attacker->radius){
             cvector_push_back(game->available_attacker_indices, attacker->idx);
             attacker->enabled = false;
+            if(attacker->player_taken){
+                attacker->player_taken = false;
+                player->position_state = NONE;
+            }
             PlaySound(game->enemy_die_sfx);
+            return;
         }
     }
 
+    // If this attacker has the player, move to new goal positon and take the player with us
+    if(attacker->player_taken){
+        Vector2 goalPosition = (Vector2){GetScreenWidth() / 2, -200};
+        Vector2 newPosition = Vector2MoveTowards(attacker->position, goalPosition, attacker->speed*GetFrameTime());
+        attacker->position = newPosition;
+        player->position = (Vector2){attacker->position.x-player->texture.width/2, attacker->position.y};
+    }
+
     // If the player is already taken don't move towards!
-    if(player->position_state == TAKEN_BY_ENEMY) return; 
+    if(player->position_state == TAKEN_BY_ATTACKER) return; 
     // Move attacker towards player
     Vector2 newPosition = Vector2MoveTowards(attacker->position, playerPosition, attacker->speed*GetFrameTime());
     attacker->position = newPosition;
     // Are we at the player position?
     if(Vector2Distance(playerPosition, attacker->position) < 0.2f){
         // The attacker has reached the goal
-        cvector_push_back(game->available_attacker_indices, attacker->idx);
-        attacker->enabled = false;
+        //cvector_push_back(game->available_attacker_indices, attacker->idx);
+        //attacker->enabled = false;
+        attacker->player_taken = true;
+        player->position_state = TAKEN_BY_ATTACKER;
         StartCameraShake(game, 0.4f, 8);
         return;
     }
