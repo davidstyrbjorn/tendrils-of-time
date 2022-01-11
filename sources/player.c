@@ -4,6 +4,8 @@
 #include"external/glad.h"
 
 #include<stdio.h>
+#include<string.h>
+#include<stdlib.h>
 
 #include"game.h"
 #include"utility.h"
@@ -27,9 +29,10 @@ void UpdatePlayer(s_player* player, s_game* game){
     }
     // The player can grab water if we're at pond + we don't already have any water
     else if(IsKeyPressed(KEY_SPACE)){
-        if(player->position_state == POND && !player->has_water){
+        if(player->position_state == POND && !player->has_water && game->pond.water_level > 0.9f){
             PlaySound(player->slurp_sound);
             player->has_water = true;
+            game->pond.water_level = 0.0f;
         }else if(player->position_state == TREE && player->has_water){
             player->has_water = false;
             // Give water to the tree!
@@ -86,17 +89,33 @@ void UpdatePlayer(s_player* player, s_game* game){
 
 }
 
-void RenderPlayer(s_player* player){
+void RenderPlayer(s_player* player, s_game* game){
     // Render player with custom shader
     BeginShaderMode(player->shader);
         DrawTexture(player->texture, player->position.x, player->position.y, WHITE);
     EndShaderMode();
+    
+    int y = 100;
 
     // UI related
     if(player->position_state == POND && !player->has_water){
-        DrawText("Press SPACE to absorb water", 10, 120, 32, WHITE);
+        y = 130;
+        if(game->pond.water_level > 0.9f)
+            DrawText("Press SPACE to absorb water", 10, 100, 32, WHITE);
+        else                                
+            DrawText("Wait for the water to fill up!", 10, 100, 32, WHITE);
     }
     else if(player->position_state == TREE && player->has_water){
-        DrawText("Press SPACE to give water to tree", 10, 120, 32, WHITE);
+        y = 130;
+        DrawText("Press SPACE to give water to tree", 10, 100, 32, WHITE);
     }
+    char str[100];
+    sprintf(str, "Seeds eaten: %d", (int)player->number_of_seeds_eaten);
+    DrawText(str, 10, y, 32, WHITE);
+}
+
+void EatSeed(s_player* player, s_seed* seed, s_game* game){
+    player->number_of_seeds_eaten++;        
+    PlaySound(player->eat_seed_sound);                  
+    CreateAttackText(game, seed->position, "EATEN!", GREEN);
 }

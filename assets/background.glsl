@@ -167,6 +167,7 @@ uniform sampler2D texture0;
 uniform vec4 colDiffuse;
 
 uniform float time;
+uniform float water_meter;
 
 void main()
 {
@@ -188,7 +189,14 @@ void main()
       s *= 2.0;
     }
  
-    vec3 noisecolor = vec3(0.5+0.4*n);
+    float noisecolor = vec3(0.5+0.4*n).x+0.5;
 
-    fragColor = vec4(0.3*noisecolor.r, 0.73*noisecolor.g, 1.0, 1);
+    // mix these 2
+    vec3 good_color = vec3(0.15, 0.56, 1.0); 
+    vec3 bad_color = vec3(0.5, 0.0, 0.0);
+    float t = 1 - (water_meter / 100.0);
+    vec3 color = mix(good_color, bad_color, t*t);
+
+    // fragColor = vec4(0.3*noisecolor, 0.73*noisecolor, 1.0, 1);
+    fragColor = vec4(color.r*noisecolor, color.g*noisecolor, color.b, 1);
 }  

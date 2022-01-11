@@ -182,6 +182,7 @@ float gridlines(vec2 v, vec2 p, float width) {
 in vec2 fragTexCoord;
 out vec4 fragColor;
 uniform float time;
+uniform float water_transparency = 1.0;
 
 void main(void)
 { 
@@ -201,11 +202,12 @@ void main(void)
 
   // Creating the wave
   float y_base = 0.975;
+  // float y_base = 0.8;
   float wave_speed = 2;
   float wave_freq = 7.0;
   float sinus = y_base + sin(st.x*wave_freq + time*wave_speed) * (1 - y_base);
   float a = step(st.y, sinus);
   
-  vec4 noisecolor = vec4(0.72, 0.95, 0.4 + 0.6*n, a);
+  vec4 noisecolor = vec4(0.72, 0.95, 0.4 + 0.6*n, a*0.9*water_transparency);
   fragColor = noisecolor;
 }

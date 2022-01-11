@@ -28,6 +28,8 @@ uniform sampler2D texture0;
 in vec2 fragTexCoord;
 out vec4 fragColor;
 
+uniform float gamma_value = 1.45;
+
 vec3 Gamma(vec3 value, float param)
 {
     return vec3(
@@ -41,7 +43,7 @@ void main()
 { 
   vec2 uv = fragTexCoord;
   vec3 tc = texture2D(texture0, uv).rgb;
-  tc = Gamma(tc, 1.25);
+  tc = Gamma(tc, gamma_value);
 
 	fragColor = vec4(tc, 1.0);
 }

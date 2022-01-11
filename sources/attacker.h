@@ -24,5 +24,7 @@ typedef struct s_attacker {
 void UpdateAttacker(struct s_game* game, s_attacker* attacker);
 s_attacker SpawnAttacker(struct s_game* game, int idx);
 void RenderAttacker(s_attacker* attacker);
+Vector2 GetEnemySpeed(struct s_game* game);
+float GetEnemySpawnTime(struct s_game* game);
 
 #endif

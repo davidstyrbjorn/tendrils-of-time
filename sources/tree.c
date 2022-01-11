@@ -7,6 +7,8 @@
 #include"utility.h"
 #include"vec.h"
 #include"cvector.h"
+#include"game.h"
+#include"seed.h"
 
 #include<stdio.h>
 #include<stdlib.h>
@@ -62,12 +64,18 @@ s_branch* SpawnBranch(s_branch* from, int direction){
     new_branch->child_a = NULL;
     new_branch->child_b = NULL;
     new_branch->parent = from;
+    new_branch->seed_counter = 0;
+    new_branch->drop_seed_at = GetRandomValue(10, 20);
 
     return new_branch;
 }
 
 void RecursiveGenerate(s_branch* branch, int depth, s_tree* tree){
     if(depth > 0) return; // Break condition
+
+    if(depth > tree->max_depth){
+        tree->max_depth = depth;
+    }
 
     if(branch->child_b == NULL){
         // Generate child b
@@ -90,6 +98,8 @@ void CreateTree(s_tree* tree, Vector2 origin) {
     tree->base_thickness = 15.0f;
     tree->water_counter = 100;
     tree->status = HEALTHY;
+    tree->dying_counter = 0;
+    tree->grow_counter = 0;
 
     // Create root
     tree->root = (s_branch){0};
@@ -102,14 +112,17 @@ void CreateTree(s_tree* tree, Vector2 origin) {
     tree->root.end = 
         Vector2Add(origin, (Vector2){GetScreenWidth()/2, GetScreenHeight()-tree->base_length});
 
+    tree->max_depth = 0;
     // Generate a bunch of levels
     RecursiveGenerate(&tree->root, 0, tree);
 
     // Load sound
     tree->hurt_sound = LoadSound(ASSETS_PATH"tree_hurt.wav");
+
+    //for(int i = 0; i < MAX_SEED_COUNT; i++) { tree->seeds[i].enabled = false; }
 }
 
-void UpdateTree(s_tree* tree){
+void UpdateTree(s_tree* tree, s_game* game){
     float dt = GetFrameTime();
     // Decrement and clamp water counter
     tree->water_counter -= 6.0f * dt;
@@ -117,9 +130,10 @@ void UpdateTree(s_tree* tree){
         tree->water_counter = 0;
     }
     // Update status
-    if(tree->water_counter <= 25) tree->status = DYING;
-    else if(tree->water_counter <= 70) tree->status = THIRSTY;
+    if(tree->water_counter <= 30) tree->status = DYING;
+    else if(tree->water_counter <= 75) tree->status = THIRSTY;
     else tree->status = HEALTHY;
+
     // Update depending on current tree status
     if(tree->status == HEALTHY){
         tree->grow_counter += 1.0f * dt;
@@ -128,37 +142,72 @@ void UpdateTree(s_tree* tree){
             tree->grow_counter = 0;
         }
     }
-    if(tree->status == DYING){
-        tree->grow_counter += 1.0f * dt;
-        if(tree->grow_counter >= 4){
+    if(tree->status == DYING || tree->status == THIRSTY){
+        tree->dying_counter += 1.0f * dt;
+
+        if(tree->dying_counter >= 2 && tree->status == DYING){
             DropBranch(tree);
-            tree->grow_counter = 0;
+            tree->dying_counter = 0;
+            if(tree->root.child_a == NULL && tree->root.child_b == NULL){
+                // Tell game its game over
+                game->game_state = GAME_OVER;
+            }
         }
+    }
+
+
+    // Update all our seeds
+    for(int i = 0; i < MAX_SEED_COUNT; i++){
+        if(tree->seeds[i].enabled) UpdateSeed(game, &tree->seeds[i]);
     }
 }
 
-void RenderTreeRecursive(s_branch* branch, int depth, s_tree* tree){
+void RenderTreeRecursive(s_branch* branch, int depth, s_tree* tree, int* leaf_count){
     if(branch == NULL) return; // Break condition
 
-    // Draw line
-    float ratio = 1 - (depth / 10.0f);
-    DrawLineEx(branch->start, branch->end, tree->base_thickness*ratio, branch->color);
+    // Check max depth
+    if(depth > tree->max_depth){
+        tree->max_depth = depth;
+    }
 
-    // Draw leaf
-    if(branch->child_a == NULL && branch->child_b == NULL){
-        DrawCircle(branch->end.x, branch->end.y, 20, ColorAlpha(GREEN, 0.5f));
+    // Draw line
+    float ratio = 1 - (depth / (float)tree->max_depth);
+    DrawLineEx(branch->start, branch->end, tree->base_thickness*(ratio+0.5f), branch->color);
+
+    // do we have a leaf
+    if(IsBranchLeaf(branch)){
+        tree->leafs[*leaf_count].position = branch->end;
+        *leaf_count = *leaf_count+1;
+    }
+
+    // Update seed status for branch, only do it for non-root branches (depth > 0)
+    if(depth > 0){
+        branch->seed_counter += 1.0f * GetFrameTime();
+        if(branch->seed_counter > branch->drop_seed_at){
+            branch->seed_counter = 0.0f;
+            CreateSeed(tree, branch->end);
+        }
     }
 
     // Traverse
-    RenderTreeRecursive(branch->child_a, depth+1, tree);
-    RenderTreeRecursive(branch->child_b, depth+1, tree);
+    RenderTreeRecursive(branch->child_a, depth+1, tree, leaf_count);
+    RenderTreeRecursive(branch->child_b, depth+1, tree, leaf_count);
 }
 
 void RenderTree(s_tree* tree){
     // Draw root
     s_branch* root = &tree->root;
+    int leaf_count = 0;
     DrawLineEx(root->start, root->end, tree->base_thickness, BROWN);
-    RenderTreeRecursive(root, 1, tree);
+    RenderTreeRecursive(root, 0, tree, &leaf_count);
+    // Render the leafs now
+    for(int i = 0; i < leaf_count; i++){
+        DrawCircleV(tree->leafs[i].position, 20, ColorAlpha(GREEN, 0.8f));
+    }
+    // Render seeds
+    for(int i = 0; i < MAX_SEED_COUNT; i++){
+        if(tree->seeds[i].enabled) RenderSeed(&tree->seeds[i]);
+    }
 
     // Render text
     char status_lit[20] = "Tree Status: ";
@@ -255,7 +304,7 @@ void DestructTree(s_tree* tree){
 }
 
 bool IsBranchLeaf(s_branch* branch){
-    return (branch->child_a == NULL && branch->child_b == NULL);
+    return (branch->child_a == NULL || branch->child_b == NULL);
 }
 
 void WaterTree(s_tree* tree){

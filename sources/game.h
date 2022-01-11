@@ -9,11 +9,13 @@
 #include"grass.h"
 #include"pond.h"
 #include"water_meter.h"
+#include"attack_text.h"
 
 typedef enum GAME_STATE {
     MENU,
     PLAYING,
-    PAUSED
+    PAUSED,
+    GAME_OVER
 } GAME_STATE;
 
 typedef struct s_game {
@@ -24,6 +26,7 @@ typedef struct s_game {
     Rectangle ground;
     Texture background_texture;
     int time_location;
+    int water_meter_location;
     s_pond pond;
     // Some game config data
     const char* title;
@@ -41,7 +44,9 @@ typedef struct s_game {
     s_attacker attackers[MAX_ATTACKERS];
     int* available_attacker_indices;
     Sound enemy_die_sfx;
+    s_attack_text attack_text[MAX_ATTACK_TEXT];
     int second_counter;
+    float gameplay_timer;
     // Tha water meter
     s_water_meter water_meter;
     // Sound
@@ -67,6 +72,7 @@ void RenderMenu(s_game* game);
 void RenderPaused(s_game* game);
 void StartCameraShake(s_game* game, float how_long, float strength);
 void UpdateCameraShake(s_game* game);
+void RenderGameOver(s_game* game);
 
 void SpawnAttackers(s_game* game, int how_many);
 

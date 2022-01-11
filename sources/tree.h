@@ -4,6 +4,9 @@
 #include"raylib.h"
 
 #include"constants.h"
+#include"seed.h"
+
+typedef struct s_game;
 
 typedef enum e_tree_status {
     HEALTHY,
@@ -18,6 +21,10 @@ typedef struct s_dynamic_branch {
     float wind_amplitude;
 } s_dynamic_branch;
 
+typedef struct s_leaf {
+    Vector2 position;
+} s_leaf;
+
 // Data to represent a tree with branch objects for the object implementation
 typedef struct s_branch {
     bool done; // Set to true if the tree has branched out
@@ -25,6 +32,8 @@ typedef struct s_branch {
     Vector2 end;
     float length;
     Color color;
+    float seed_counter;
+    float drop_seed_at;
     s_dynamic_branch dynamics;
     struct s_branch* child_a;
     struct s_branch* child_b;
@@ -41,6 +50,10 @@ typedef struct s_tree {
     e_tree_status status;
     float water_counter;
     float grow_counter;
+    float dying_counter;
+    int max_depth;
+    s_leaf leafs[MAX_LEAFS];
+    s_seed seeds[MAX_SEED_COUNT];
 } s_tree;
 
 // Takes in a branch, spits out a new one going out from given branch, is recursive
@@ -51,7 +64,7 @@ s_branch* SpawnBranch(s_branch* from, int direction);
 void RecursiveTreeDraw(int length, int start_length, float angle);
 
 void CreateTree(s_tree* tree, Vector2 origin);
-void UpdateTree(s_tree* tree);
+void UpdateTree(s_tree* tree, struct s_game* game);
 void RenderTree(s_tree* tree);
 void DestructTree(s_tree* tree);
 

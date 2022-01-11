@@ -42,6 +42,7 @@ void RunGame(s_game* game) {
     game->background_texture = LoadTextureFromImage(imBlank);  // Load blank texture to fill on shader
     UnloadImage(imBlank);
     game->time_location = glGetUniformLocation(game->background_shader.id, "time");
+    game->water_meter_location = glGetUniformLocation(game->background_shader.id, "water_meter");
 
     // Create the ground object
     game->ground.width = game->window_size.x*0.8;
@@ -71,10 +72,12 @@ void RunGame(s_game* game) {
     CreatePond(&game->pond);
     CreateWaterMeter(&game->water_meter);
 
-    // Create player
+    // Setup player
     float player_height = 80;
     float player_width = 40;
     game->player.slurp_sound = LoadSound(ASSETS_PATH"slurp.wav");
+    game->player.eat_seed_sound = LoadSound(ASSETS_PATH"eat_seed.wav");
+    game->player.number_of_seeds_eaten = 0;
     game->player.has_water = false;
     game->player.position = (Vector2){100, game->window_size.y - game->ground.height - player_height};
     game->player.horizontal_speed = 12500;
@@ -93,10 +96,14 @@ void RunGame(s_game* game) {
     game->camera_shake_timer = 0;
     game->bg_music = LoadMusicStream(ASSETS_PATH"tree_game.mp3");
     game->enemy_die_sfx = LoadSound(ASSETS_PATH"enemy_dead.wav");
+    game->gameplay_timer = 0.0f;
     PlayMusicStream(game->bg_music);
     // Fill the available attacker indices with all indices
     game->available_attacker_indices = NULL;
     for(int i = 0; i < MAX_ATTACKERS; i++) { cvector_push_back(game->available_attacker_indices, i); }
+    // Loop through alot of lists and set enabled to false
+    for(int i = 0; i < MAX_ATTACKERS; i++) { game->attackers[i].enabled = false; }
+    for(int i = 0; i < MAX_ATTACK_TEXT; i++) { game->attack_text[i].enabled = false; }
 
     while(!WindowShouldClose()){
         // Update input related stuff
@@ -148,17 +155,17 @@ void InputGame(s_game* game) {
         }
     }     
 
-    if(IsKeyDown(KEY_LEFT)){
-        game->camera.offset.x -= 100 * GetFrameTime();
-    }else if(IsKeyDown(KEY_RIGHT)){
-        game->camera.offset.x += 100 * GetFrameTime();
-    }
+    // if(IsKeyDown(KEY_LEFT)){
+    //     game->camera.offset.x -= 100 * GetFrameTime();
+    // }else if(IsKeyDown(KEY_RIGHT)){
+    //     game->camera.offset.x += 100 * GetFrameTime();
+    // }
 
-    if(IsKeyDown(KEY_Z)){
-        game->camera.zoom += 1.f * GetFrameTime();
-    } else if(IsKeyDown(KEY_X)){
-        game->camera.zoom -= 1.f * GetFrameTime();
-    }
+    // if(IsKeyDown(KEY_Z)){
+    //     game->camera.zoom += 1.f * GetFrameTime();
+    // } else if(IsKeyDown(KEY_X)){
+    //     game->camera.zoom -= 1.f * GetFrameTime();
+    // }
 }
 
 /* RUNNERS */
@@ -183,14 +190,20 @@ void GameplayLoop(s_game* game){
     float time = (float)GetTime();
     glUseProgram(game->background_shader.id);
     glUniform1f(game->time_location, time);
+    glUniform1f(game->water_meter_location, game->tree.water_counter);
+
     glUseProgram(game->pond.shader.id);
     glUniform1f(game->pond.time_location, time);
+    glUniform1f(game->pond.water_location, game->pond.water_level);
+    
     glUseProgram(game->player.shader.id);
     glUniform1f(game->player.time_location, time);
     glUniform1f(game->player.water_level_loc, game->player.water_level);
+    
     glUseProgram(game->water_meter.shader.id);
     glUniform1f(game->water_meter.water_level_location, game->tree.water_counter);
     glUniform1f(game->water_meter.shader.id, time);
+    
     glUseProgram(0);
 
     BeginTextureMode(game->framebuffer_texture); // Enable so we draw to the framebuffer texture!
@@ -217,10 +230,16 @@ void GameplayLoop(s_game* game){
         // Render grass
         RenderGrass(&game->grass);
         // Render player
-        RenderPlayer(&game->player);
+        RenderPlayer(&game->player, game);
         // Render attackers
         for(int i = 0; i < MAX_ATTACKERS; i++){
+            if(!game->attackers[i].enabled) continue;
             RenderAttacker(&game->attackers[i]);
+        }
+        // Render attack text
+        for(int i = 0; i < MAX_ATTACK_TEXT; i++){
+            if(!game->attack_text[i].enabled) continue;
+            RenderAttackText(&game->attack_text[i]);
         }
         RenderWaterMeter(game, &game->water_meter);
         
@@ -246,6 +265,9 @@ void GameplayLoop(s_game* game){
         if(game->game_state == PAUSED){
             RenderPaused(game);
         }
+        if(game->game_state == GAME_OVER){
+            RenderGameOver(game);
+        }
 
     EndDrawing();
 }
@@ -265,13 +287,21 @@ void UpdatePlaying(s_game* game){
         game->game_state = PAUSED;
     }
 
+    // update our gameplay timer
+    game->gameplay_timer += 1.0f * GetFrameTime();
+
     // Update attackers
     for(int i = 0; i < MAX_ATTACKERS; i++){
         if(!game->attackers[i].enabled) continue;
         UpdateAttacker(game, &game->attackers[i]);
     }
+    // Update attack text
+    for(int i = 0; i < MAX_ATTACK_TEXT; i++){
+        if(!game->attack_text[i].enabled) continue;
+        UpdateAttackText(&game->attack_text[i]);
+    }
     // Spawn attackers? Every 6 seconds
-    if(GetTime() - game->second_counter >= 6){
+    if(GetTime() - game->second_counter >= GetEnemySpawnTime(game)){
         game->second_counter = GetTime();
         int _idx = game->available_attacker_indices[0];
         game->attackers[_idx] = SpawnAttacker(game, _idx);
@@ -284,8 +314,9 @@ void UpdatePlaying(s_game* game){
     }
 
     // Update player and tree
+    UpdatePond(&game->pond);
     UpdatePlayer(&game->player, game);
-    UpdateTree(&game->tree);
+    UpdateTree(&game->tree, game);
 }
 
 void UpdateMenu(s_game* game){
@@ -306,6 +337,15 @@ void UpdatePaused(s_game* game){
     if(IsKeyPressed(KEY_P)){
         game->game_state = PLAYING;
     }
+}
+
+void RenderGameOver(s_game* game){
+    DrawText("YOUR TREE HAS DIED!", 30, 180, 48, RED);
+    DrawText("GAME OVER!!!", 40, 220, 48, RED);
+    int final_score = game->player.number_of_seeds_eaten * (int)game->gameplay_timer;
+    char final_score_str[100];
+    sprintf(final_score_str, "FINAL SCORE: %d", final_score);
+    DrawText(final_score_str, 50, 360, 48, GREEN);
 }
 
 void RenderPaused(s_game* game){
