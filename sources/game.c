@@ -94,7 +94,7 @@ void RunGame(s_game* game) {
     // Setup other
     game->second_counter = 0;
     game->camera_shake_timer = 0;
-    game->bg_music = LoadMusicStream(ASSETS_PATH"tree_game.mp3");
+    game->bg_music = LoadMusicStream(ASSETS_PATH"yorkshire.wav");
     game->enemy_die_sfx = LoadSound(ASSETS_PATH"enemy_dead.wav");
     game->gameplay_timer = 0.0f;
     PlayMusicStream(game->bg_music);

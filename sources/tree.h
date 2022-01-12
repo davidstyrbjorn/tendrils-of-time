@@ -34,6 +34,8 @@ typedef struct s_branch {
     Color color;
     float seed_counter;
     float drop_seed_at;
+    bool growing;
+    float t;
     s_dynamic_branch dynamics;
     struct s_branch* child_a;
     struct s_branch* child_b;

@@ -66,6 +66,8 @@ s_branch* SpawnBranch(s_branch* from, int direction){
     new_branch->parent = from;
     new_branch->seed_counter = 0;
     new_branch->drop_seed_at = GetRandomValue(10, 20);
+    new_branch->growing = true;
+    new_branch->t = 0.0f;           
 
     return new_branch;
 }
@@ -75,7 +77,7 @@ void RecursiveGenerate(s_branch* branch, int depth, s_tree* tree){
 
     if(depth > tree->max_depth){
         tree->max_depth = depth;
-    }
+    }                                   
 
     if(branch->child_b == NULL){
         // Generate child b
@@ -170,12 +172,22 @@ void RenderTreeRecursive(s_branch* branch, int depth, s_tree* tree, int* leaf_co
         tree->max_depth = depth;
     }
 
+    // Increase t (growing parameter)
+    if(branch->t < 1.0f){
+        branch->t += 0.5f * GetFrameTime();
+        branch->growing = true;
+    }else{
+        branch->growing = false;
+    }
+    Vector2 dir = Vector2Scale(Vector2Subtract(branch->end, branch->start), branch->t);
+    Vector2 end = Vector2Add(branch->start, dir);
+
     // Draw line
     float ratio = 1 - (depth / (float)tree->max_depth);
-    DrawLineEx(branch->start, branch->end, tree->base_thickness*(ratio+0.5f), branch->color);
+    DrawLineEx(branch->start, end, tree->base_thickness*(ratio+0.5f), branch->color);
 
     // do we have a leaf
-    if(IsBranchLeaf(branch)){
+    if(IsBranchLeaf(branch) && !branch->growing){
         tree->leafs[*leaf_count].position = branch->end;
         *leaf_count = *leaf_count+1;
     }
