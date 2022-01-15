@@ -51,6 +51,8 @@ typedef struct s_game {
     s_water_meter water_meter;
     // Sound
     Music bg_music;
+    Music menu_music;
+    Music game_over_music;
     bool in_transition;
     float camera_shake_timer;
     float camera_shake_strength;

@@ -94,10 +94,13 @@ void RunGame(s_game* game) {
     // Setup other
     game->second_counter = 0;
     game->camera_shake_timer = 0;
-    game->bg_music = LoadMusicStream(ASSETS_PATH"yorkshire.wav");
+    game->bg_music = LoadMusicStream(ASSETS_PATH"tree-song.mp3");
+    game->menu_music = LoadMusicStream(ASSETS_PATH"menu.mp3");
+    game->game_over_music = LoadMusicStream(ASSETS_PATH"game-over.mp3");
+    PlayMusicStream(game->menu_music);
     game->enemy_die_sfx = LoadSound(ASSETS_PATH"enemy_dead.wav");
     game->gameplay_timer = 0.0f;
-    PlayMusicStream(game->bg_music);
+    
     // Fill the available attacker indices with all indices
     game->available_attacker_indices = NULL;
     for(int i = 0; i < MAX_ATTACKERS; i++) { cvector_push_back(game->available_attacker_indices, i); }
@@ -109,8 +112,10 @@ void RunGame(s_game* game) {
         // Update input related stuff
         InputGame(game); 
 
-        // Needs to be called in order for bg music to work
+        // Needs to be called in order for music to work
         UpdateMusicStream(game->bg_music); 
+        UpdateMusicStream(game->menu_music);
+        UpdateMusicStream(game->game_over_music);
         
         // Runs main game loop
         GameplayLoop(game);
@@ -118,6 +123,7 @@ void RunGame(s_game* game) {
 
     //TODO(david): Make sure all memeory is deallocated please and thank you!
     UnloadMusicStream(game->bg_music);
+    UnloadMusicStream(game->menu_music);
     UnloadShader(game->pp_shader);
     UnloadShader(game->background_shader);
     UnloadShader(game->player.shader);
@@ -324,12 +330,18 @@ void UpdateMenu(s_game* game){
     if(IsKeyPressed(KEY_SPACE)){
         game->game_state = PLAYING;
         game->in_transition = true;
+        PlayMusicStream(game->bg_music);
+        StopMusicStream(game->menu_music);
     }
 }
 
 void RenderMenu(s_game* game){
     DrawText("TENDRILS OF TIME", (game->window_size.x/5), 100, 48, WHITE);
-    DrawText("PRESS SPACE TO PLAY", (game->window_size.x/6), 175, 48, GREEN);
+
+    float x = sin(GetTime()*9);
+    Color c = GREEN;
+    if(x > 0) c = ColorAlpha(WHITE, 0.0f);
+    DrawText("PRESS SPACE TO PLAY", (game->window_size.x/6), 250, 48, c);
 }
 
 void UpdatePaused(s_game* game){

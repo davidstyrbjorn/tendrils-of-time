@@ -153,6 +153,8 @@ void UpdateTree(s_tree* tree, s_game* game){
             if(tree->root.child_a == NULL && tree->root.child_b == NULL){
                 // Tell game its game over
                 game->game_state = GAME_OVER;
+                StopMusicStream(game->bg_music);
+                PlayMusicStream(game->game_over_music);
             }
         }
     }
